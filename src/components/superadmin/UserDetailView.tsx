@@ -1,49 +1,91 @@
-
-import React, { useState } from 'react';
-import { ArrowLeft, Edit2, Save, X, Download, Send, Ban, Trash2, RefreshCw, CreditCard, Calendar, AlertTriangle } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Badge } from '@/components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
-import { ConfirmActionModal } from './ConfirmActionModal';
-import { ResetPasswordModal } from './ResetPasswordModal';
-import { ChangePlanModal } from './ChangePlanModal';
+import React, { useState } from "react";
+import {
+  ArrowLeft,
+  Edit2,
+  Save,
+  X,
+  Download,
+  Send,
+  Ban,
+  Trash2,
+  RefreshCw,
+  CreditCard,
+  Calendar,
+  AlertTriangle,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { useToast } from "@/hooks/use-toast";
+import { ConfirmActionModal } from "./ConfirmActionModal";
+import { ResetPasswordModal } from "./ResetPasswordModal";
+import { ChangePlanModal } from "./ChangePlanModal";
 
 interface UserDetailViewProps {
   user: any;
   onBack: () => void;
 }
 
-export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) => {
+export const UserDetailView: React.FC<UserDetailViewProps> = ({
+  user,
+  onBack,
+}) => {
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
   const [formData, setFormData] = useState({
-    ...user,
-    legalOwnerFirstName: 'Marco',
-    legalOwnerLastName: 'Rossi',
-    street: 'Via Roma 123',
-    city: 'Milano',
-    zipCode: '20100',
-    province: 'MI',
-    country: 'Italy'
+    legalOwnerFirstName: user.legalOwnerFirstName || "",
+    legalOwnerLastName: user.legalOwnerLastName || "",
+    street: user.street || "",
+    city: user.city || "",
+    zipCode: user.zipCode || "",
+    province: user.province || "",
+    country: user.country || "",
+    billingEmail: user.billingEmail || "",
+    vatNumber: user.vatNumber || "",
+    businessName: user.businessName || "",
+    email: user.email || "",
+    phone: user.phone || "",
+    language: user.language || "",
+    address: user.address || "",
   });
+
+  console.log("User detail ", formData);
   const [showConfirmModal, setShowConfirmModal] = useState<{
     isOpen: boolean;
-    type: 'suspend' | 'delete' | 'cancel-subscription' | 'resume-subscription' | '';
+    type:
+      | "suspend"
+      | "delete"
+      | "cancel-subscription"
+      | "resume-subscription"
+      | "";
     title: string;
     message: string;
     confirmText: string;
     isDestructive: boolean;
   }>({
     isOpen: false,
-    type: '',
-    title: '',
-    message: '',
-    confirmText: '',
-    isDestructive: false
+    type: "",
+    title: "",
+    message: "",
+    confirmText: "",
+    isDestructive: false,
   });
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
@@ -60,100 +102,106 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
   const handleCancel = () => {
     setFormData({
       ...user,
-      legalOwnerFirstName: 'Marco',
-      legalOwnerLastName: 'Rossi',
-      street: 'Via Roma 123',
-      city: 'Milano',
-      zipCode: '20100',
-      province: 'MI',
-      country: 'Italy'
+      legalOwnerFirstName: "",
+      legalOwnerLastName: "",
+      street: "",
+      city: "",
+      zipCode: "",
+      province: "",
+      country: "",
     });
     setEditingSection(null);
   };
 
   const handleConfirmAction = () => {
     const { type } = showConfirmModal;
-    
+
     switch (type) {
-      case 'suspend':
+      case "suspend":
         toast({
           title: "Account Suspended",
           description: "User has been suspended — simulation only",
         });
         break;
-      case 'delete':
+      case "delete":
         toast({
           title: "Account Deleted",
           description: "Account deleted (simulation only)",
-          variant: "destructive"
+          variant: "destructive",
         });
         break;
-      case 'cancel-subscription':
+      case "cancel-subscription":
         toast({
           title: "Subscription Cancelled",
           description: "Subscription has been cancelled — simulation only",
         });
         break;
-      case 'resume-subscription':
+      case "resume-subscription":
         toast({
           title: "Subscription Resumed",
           description: "Subscription has been resumed — simulation only",
         });
         break;
     }
-    
+
     setShowConfirmModal({ ...showConfirmModal, isOpen: false });
   };
 
-  const openConfirmModal = (type: 'suspend' | 'delete' | 'cancel-subscription' | 'resume-subscription') => {
+  const openConfirmModal = (
+    type: "suspend" | "delete" | "cancel-subscription" | "resume-subscription"
+  ) => {
     const configs = {
       suspend: {
-        title: 'Suspend Account',
-        message: 'Are you sure you want to suspend this user? This will temporarily disable their access.',
-        confirmText: 'Suspend Account',
-        isDestructive: true
+        title: "Suspend Account",
+        message:
+          "Are you sure you want to suspend this user? This will temporarily disable their access.",
+        confirmText: "Suspend Account",
+        isDestructive: true,
       },
       delete: {
-        title: 'Delete Account',
-        message: 'This action is permanent. Are you sure you want to delete this user?',
-        confirmText: 'Delete Account',
-        isDestructive: true
+        title: "Delete Account",
+        message:
+          "This action is permanent. Are you sure you want to delete this user?",
+        confirmText: "Delete Account",
+        isDestructive: true,
       },
-      'cancel-subscription': {
-        title: 'Cancel Subscription',
-        message: 'Are you sure you want to cancel this subscription? The user will lose access at the end of the current billing period.',
-        confirmText: 'Cancel Subscription',
-        isDestructive: true
+      "cancel-subscription": {
+        title: "Cancel Subscription",
+        message:
+          "Are you sure you want to cancel this subscription? The user will lose access at the end of the current billing period.",
+        confirmText: "Cancel Subscription",
+        isDestructive: true,
       },
-      'resume-subscription': {
-        title: 'Resume Subscription',
-        message: 'Are you sure you want to resume this subscription? The user will be charged immediately.',
-        confirmText: 'Resume Subscription',
-        isDestructive: false
-      }
+      "resume-subscription": {
+        title: "Resume Subscription",
+        message:
+          "Are you sure you want to resume this subscription? The user will be charged immediately.",
+        confirmText: "Resume Subscription",
+        isDestructive: false,
+      },
     };
 
     const config = configs[type];
     setShowConfirmModal({
       isOpen: true,
       type,
-      ...config
+      ...config,
     });
   };
 
   const mockInvoices = [
-    { id: 'INV-001', date: '2024-01-15', amount: '€89.00', status: 'paid' },
-    { id: 'INV-002', date: '2023-12-15', amount: '€89.00', status: 'paid' },
-    { id: 'INV-003', date: '2023-11-15', amount: '€89.00', status: 'paid' },
+    { id: "INV-001", date: "2024-01-15", amount: "€89.00", status: "paid" },
+    { id: "INV-002", date: "2023-12-15", amount: "€89.00", status: "paid" },
+    { id: "INV-003", date: "2023-11-15", amount: "€89.00", status: "paid" },
   ];
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active':
+      case "active":
         return <Badge className="bg-green-100 text-green-800">Active</Badge>;
-      case 'suspended':
+      case "suspended":
         return <Badge className="bg-red-100 text-red-800">Suspended</Badge>;
-      case 'pending':
+      case "pending":
         return <Badge className="bg-yellow-100 text-yellow-800">Pending</Badge>;
       default:
         return <Badge variant="secondary">{status}</Badge>;
@@ -162,15 +210,13 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
 
   const getPlanBadge = (plan: string) => {
     const colors = {
-      'Basic': 'bg-gray-100 text-gray-800',
-      'Standard': 'bg-blue-100 text-blue-800',
-      'Premium': 'bg-purple-100 text-purple-800'
+      Basic: "bg-gray-100 text-gray-800",
+      Standard: "bg-blue-100 text-blue-800",
+      Premium: "bg-purple-100 text-purple-800",
     };
-    
+
     return (
-      <Badge className={colors[plan as keyof typeof colors]}>
-        {plan}
-      </Badge>
+      <Badge className={colors[plan as keyof typeof colors]}>{plan}</Badge>
     );
   };
 
@@ -183,8 +229,12 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{user.businessName}</h1>
-            <p className="text-gray-600 mt-1">User ID: {user.id} • Created: {user.createdAt}</p>
+            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              {user.businessName}
+            </h1>
+            <p className="text-gray-600 mt-1">
+              User ID: {user.id} • Created: {user.createdAt}
+            </p>
           </div>
         </div>
         <div className="flex space-x-2 mt-4 sm:mt-0">
@@ -203,13 +253,17 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => editingSection === 'general' ? null : setEditingSection('general')}
+                onClick={() =>
+                  editingSection === "general"
+                    ? null
+                    : setEditingSection("general")
+                }
               >
                 <Edit2 className="w-4 h-4" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {editingSection === 'general' ? (
+              {editingSection === "general" ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -217,7 +271,12 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                       <Input
                         id="businessName"
                         value={formData.businessName}
-                        onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            businessName: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
@@ -226,7 +285,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                         id="email"
                         type="email"
                         value={formData.email}
-                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({ ...formData, email: e.target.value })
+                        }
                       />
                     </div>
                     <div>
@@ -234,12 +295,19 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                       <Input
                         id="phone"
                         value={formData.phone}
-                        onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({ ...formData, phone: e.target.value })
+                        }
                       />
                     </div>
                     <div>
                       <Label htmlFor="language">Language</Label>
-                      <Select value={formData.language} onValueChange={(value) => setFormData({...formData, language: value})}>
+                      <Select
+                        value={formData.language}
+                        onValueChange={(value) =>
+                          setFormData({ ...formData, language: value })
+                        }
+                      >
                         <SelectTrigger>
                           <SelectValue />
                         </SelectTrigger>
@@ -257,11 +325,13 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                     <Input
                       id="address"
                       value={formData.address}
-                      onChange={(e) => setFormData({...formData, address: e.target.value})}
+                      onChange={(e) =>
+                        setFormData({ ...formData, address: e.target.value })
+                      }
                     />
                   </div>
                   <div className="flex space-x-2">
-                    <Button onClick={() => handleSave('General')} size="sm">
+                    <Button onClick={() => handleSave("General")} size="sm">
                       <Save className="w-4 h-4 mr-2" />
                       Save Changes
                     </Button>
@@ -305,13 +375,17 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
               <Button
                 variant="ghost"
                 size="sm"
-                onClick={() => editingSection === 'billing' ? null : setEditingSection('billing')}
+                onClick={() =>
+                  editingSection === "billing"
+                    ? null
+                    : setEditingSection("billing")
+                }
               >
                 <Edit2 className="w-4 h-4" />
               </Button>
             </CardHeader>
             <CardContent className="space-y-4">
-              {editingSection === 'billing' ? (
+              {editingSection === "billing" ? (
                 <>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
@@ -319,7 +393,12 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                       <Input
                         id="businessNameBilling"
                         value={formData.businessName}
-                        onChange={(e) => setFormData({...formData, businessName: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            businessName: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
@@ -328,23 +407,42 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                         id="billingEmail"
                         type="email"
                         value={formData.billingEmail}
-                        onChange={(e) => setFormData({...formData, billingEmail: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            billingEmail: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="legalOwnerFirstName">Legal Owner First Name</Label>
+                      <Label htmlFor="legalOwnerFirstName">
+                        Legal Owner First Name
+                      </Label>
                       <Input
                         id="legalOwnerFirstName"
                         value={formData.legalOwnerFirstName}
-                        onChange={(e) => setFormData({...formData, legalOwnerFirstName: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            legalOwnerFirstName: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
-                      <Label htmlFor="legalOwnerLastName">Legal Owner Last Name</Label>
+                      <Label htmlFor="legalOwnerLastName">
+                        Legal Owner Last Name
+                      </Label>
                       <Input
                         id="legalOwnerLastName"
                         value={formData.legalOwnerLastName}
-                        onChange={(e) => setFormData({...formData, legalOwnerLastName: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            legalOwnerLastName: e.target.value,
+                          })
+                        }
                       />
                     </div>
                     <div>
@@ -352,11 +450,16 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                       <Input
                         id="vatNumber"
                         value={formData.vatNumber}
-                        onChange={(e) => setFormData({...formData, vatNumber: e.target.value})}
+                        onChange={(e) =>
+                          setFormData({
+                            ...formData,
+                            vatNumber: e.target.value,
+                          })
+                        }
                       />
                     </div>
                   </div>
-                  
+
                   <div className="border-t pt-4">
                     <h4 className="font-medium mb-3">Legal Address</h4>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -365,7 +468,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                         <Input
                           id="street"
                           value={formData.street}
-                          onChange={(e) => setFormData({...formData, street: e.target.value})}
+                          onChange={(e) =>
+                            setFormData({ ...formData, street: e.target.value })
+                          }
                         />
                       </div>
                       <div>
@@ -373,7 +478,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                         <Input
                           id="city"
                           value={formData.city}
-                          onChange={(e) => setFormData({...formData, city: e.target.value})}
+                          onChange={(e) =>
+                            setFormData({ ...formData, city: e.target.value })
+                          }
                         />
                       </div>
                       <div>
@@ -381,7 +488,12 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                         <Input
                           id="zipCode"
                           value={formData.zipCode}
-                          onChange={(e) => setFormData({...formData, zipCode: e.target.value})}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              zipCode: e.target.value,
+                            })
+                          }
                         />
                       </div>
                       <div>
@@ -389,12 +501,22 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                         <Input
                           id="province"
                           value={formData.province}
-                          onChange={(e) => setFormData({...formData, province: e.target.value})}
+                          onChange={(e) =>
+                            setFormData({
+                              ...formData,
+                              province: e.target.value,
+                            })
+                          }
                         />
                       </div>
                       <div>
                         <Label htmlFor="country">Country</Label>
-                        <Select value={formData.country} onValueChange={(value) => setFormData({...formData, country: value})}>
+                        <Select
+                          value={formData.country}
+                          onValueChange={(value) =>
+                            setFormData({ ...formData, country: value })
+                          }
+                        >
                           <SelectTrigger>
                             <SelectValue />
                           </SelectTrigger>
@@ -408,9 +530,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex space-x-2">
-                    <Button onClick={() => handleSave('Billing')} size="sm">
+                    <Button onClick={() => handleSave("Billing")} size="sm">
                       <Save className="w-4 h-4 mr-2" />
                       Save Changes
                     </Button>
@@ -433,19 +555,24 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                     </div>
                     <div>
                       <Label className="text-gray-600">Legal Owner</Label>
-                      <p className="font-medium">{formData.legalOwnerFirstName} {formData.legalOwnerLastName}</p>
+                      <p className="font-medium">
+                        {formData.legalOwnerFirstName}{" "}
+                        {formData.legalOwnerLastName}
+                      </p>
                     </div>
                     <div>
                       <Label className="text-gray-600">VAT Number</Label>
                       <p className="font-medium">{user.vatNumber}</p>
                     </div>
                   </div>
-                  
+
                   <div className="border-t pt-4">
                     <Label className="text-gray-600">Legal Address</Label>
                     <p className="font-medium">
-                      {formData.street}<br />
-                      {formData.city}, {formData.province} {formData.zipCode}<br />
+                      {formData.street}
+                      <br />
+                      {formData.city}, {formData.province} {formData.zipCode}
+                      <br />
                       {formData.country}
                     </p>
                   </div>
@@ -468,13 +595,15 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                   <Label className="text-gray-600">Current Plan</Label>
                   <div className="flex items-center space-x-2 mt-1">
                     {getPlanBadge(user.plan)}
-                    <span className="text-sm text-gray-500">€89/month</span>
+                    {/* <span className="text-sm text-gray-500">€89/month</span> */}
                   </div>
                 </div>
                 <div>
                   <Label className="text-gray-600">Status</Label>
                   <div className="mt-1">
-                    <Badge className="bg-green-100 text-green-800">Active</Badge>
+                    <Badge className="bg-green-100 text-green-800">
+                      Active
+                    </Badge>
                   </div>
                 </div>
                 <div>
@@ -489,28 +618,28 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                   <p className="font-medium">**** **** **** 4242</p>
                 </div>
               </div>
-              
+
               <div className="border-t pt-4">
                 <div className="flex flex-wrap gap-2">
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
                     onClick={() => setShowChangePlanModal(true)}
                   >
                     Change Plan
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
+                  <Button
+                    variant="outline"
+                    size="sm"
                     className="text-orange-600 hover:text-orange-700"
-                    onClick={() => openConfirmModal('cancel-subscription')}
+                    onClick={() => openConfirmModal("cancel-subscription")}
                   >
                     Cancel Subscription
                   </Button>
-                  <Button 
-                    variant="outline" 
+                  <Button
+                    variant="outline"
                     size="sm"
-                    onClick={() => openConfirmModal('resume-subscription')}
+                    onClick={() => openConfirmModal("resume-subscription")}
                   >
                     Resume Subscription
                   </Button>
@@ -544,7 +673,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                 <TableBody>
                   {mockInvoices.map((invoice) => (
                     <TableRow key={invoice.id}>
-                      <TableCell className="font-medium">{invoice.id}</TableCell>
+                      <TableCell className="font-medium">
+                        {invoice.id}
+                      </TableCell>
                       <TableCell>{invoice.date}</TableCell>
                       <TableCell>{invoice.amount}</TableCell>
                       <TableCell>
@@ -580,15 +711,11 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
             <CardContent className="space-y-4">
               <div>
                 <Label className="text-gray-600">Status</Label>
-                <div className="mt-1">
-                  {getStatusBadge(user.status)}
-                </div>
+                <div className="mt-1">{getStatusBadge(user.accountStatus)}</div>
               </div>
               <div>
                 <Label className="text-gray-600">Plan</Label>
-                <div className="mt-1">
-                  {getPlanBadge(user.plan)}
-                </div>
+                <div className="mt-1">{getPlanBadge(user.plan)}</div>
               </div>
               <div>
                 <Label className="text-gray-600">Subscription Start</Label>
@@ -613,7 +740,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
               </div>
               <div>
                 <Label className="text-gray-600">Account Created</Label>
-                <p className="font-medium">{user.createdAt}</p>
+                <p className="font-medium">{user.created_at}</p>
               </div>
               <div>
                 <Label className="text-gray-600">Location</Label>
@@ -628,8 +755,8 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
               <CardTitle>Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start"
                 onClick={() => setShowResetPasswordModal(true)}
               >
@@ -640,18 +767,18 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
                 <Send className="w-4 h-4 mr-2" />
                 Send Email
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start text-orange-600 hover:text-orange-700"
-                onClick={() => openConfirmModal('suspend')}
+                onClick={() => openConfirmModal("suspend")}
               >
                 <Ban className="w-4 h-4 mr-2" />
-                {user.status === 'suspended' ? 'Activate' : 'Suspend'} Account
+                {user.status === "suspended" ? "Activate" : "Suspend"} Account
               </Button>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="w-full justify-start text-red-600 hover:text-red-700"
-                onClick={() => openConfirmModal('delete')}
+                onClick={() => openConfirmModal("delete")}
               >
                 <Trash2 className="w-4 h-4 mr-2" />
                 Delete Account
@@ -669,7 +796,9 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({ user, onBack }) 
         confirmButtonText={showConfirmModal.confirmText}
         isDestructive={showConfirmModal.isDestructive}
         onConfirm={handleConfirmAction}
-        onCancel={() => setShowConfirmModal({ ...showConfirmModal, isOpen: false })}
+        onCancel={() =>
+          setShowConfirmModal({ ...showConfirmModal, isOpen: false })
+        }
       />
 
       <ResetPasswordModal

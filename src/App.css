@@ -18,6 +18,25 @@
   filter: drop-shadow(0 0 2em #61dafbaa);
 }
 
+/* Red scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px !important;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: black !important;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: #1c9b7a !important;
+  border-radius: 6px !important;
+}
+
+.button_border {
+  border-radius: 14px;
+  margin: 10px auto;
+  border: 1px solid red;
+  width: fit-content;
+}
+
 @keyframes logo-spin {
   from {
     transform: rotate(0deg);

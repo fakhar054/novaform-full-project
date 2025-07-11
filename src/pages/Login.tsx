@@ -18,6 +18,28 @@ const Login = () => {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
+  const updateLastLogin = async () => {
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      console.error("User not found:", userError);
+      return;
+    }
+
+    const { error: updateError } = await (supabase as any)
+      .from("users")
+      .update({ lastLogin: new Date().toISOString() })
+      .eq("uuid", user.id);
+
+    if (updateError) {
+      console.error("Failed to update last login:", updateError.message);
+    } else {
+      console.log("Last login time updated!");
+    }
+  };
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const newErrors = { email: "", password: "" };
@@ -47,6 +69,8 @@ const Login = () => {
       if (loginData?.session) {
         toast.success("Welcome back!");
         console.log("User logged in:", loginData.user);
+        await updateLastLogin();
+
         navigate("/dashboard");
         return;
       }

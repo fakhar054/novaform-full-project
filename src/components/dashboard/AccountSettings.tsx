@@ -93,7 +93,7 @@ export const AccountSettings: React.FC = () => {
     if (error) {
       console.error("Data fetch error:", error.message);
     } else {
-      console.log("data fetched from ", data);
+      // console.log("data fetched from ", data);
       setUserData(data);
       setPersonalData({
         firstName: data.firstName || "",
@@ -297,7 +297,7 @@ export const AccountSettings: React.FC = () => {
         type: "success",
         text: "Company information updated successfully!",
       });
-      setCompanyData(data);
+      setBillingData(data);
       toast("Information updated successfully!");
       setTimeout(() => setMessage(null), 3000);
     }

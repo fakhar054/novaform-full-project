@@ -1,18 +1,46 @@
+import React, { useState } from "react";
+import {
+  Users,
+  Plus,
+  Edit,
+  Trash2,
+  Shield,
+  Eye,
+  Settings,
+  UserPlus,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Switch } from "@/components/ui/switch";
+import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { ConfirmActionModal } from "./ConfirmActionModal";
 
-import React, { useState } from 'react';
-import { Users, Plus, Edit, Trash2, Shield, Eye, Settings, UserPlus } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Switch } from '@/components/ui/switch';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ConfirmActionModal } from './ConfirmActionModal';
 
 interface AdminUser {
   id: string;
@@ -20,7 +48,7 @@ interface AdminUser {
   email: string;
   role: string;
   lastLogin: string;
-  status: 'Active' | 'Suspended';
+  status: "Active" | "Suspended";
 }
 
 interface Role {
@@ -31,38 +59,59 @@ interface Role {
 }
 
 const mockUsers: AdminUser[] = [
-  { id: '1', name: 'John Smith', email: 'john@novafarm.com', role: 'Super Admin', lastLogin: '2024-06-30 14:30', status: 'Active' },
-  { id: '2', name: 'Sarah Johnson', email: 'sarah@novafarm.com', role: 'Support Staff', lastLogin: '2024-06-29 16:45', status: 'Active' },
-  { id: '3', name: 'Mike Chen', email: 'mike@novafarm.com', role: 'Billing', lastLogin: '2024-06-28 09:15', status: 'Suspended' },
+  {
+    id: "1",
+    name: "John Smith",
+    email: "john@novafarm.com",
+    role: "Super Admin",
+    lastLogin: "2024-06-30 14:30",
+    status: "Active",
+  },
+  {
+    id: "2",
+    name: "Sarah Johnson",
+    email: "sarah@novafarm.com",
+    role: "Support Staff",
+    lastLogin: "2024-06-29 16:45",
+    status: "Active",
+  },
+  {
+    id: "3",
+    name: "Mike Chen",
+    email: "mike@novafarm.com",
+    role: "Billing",
+    lastLogin: "2024-06-28 09:15",
+    status: "Suspended",
+  },
 ];
 
 const mockRoles: Role[] = [
-  { 
-    id: '1', 
-    name: 'Super Admin', 
-    description: 'Full system access',
-    permissions: ['users', 'payments', 'settings', 'analytics', 'billing']
+  // {
+  //   id: '1',
+  //   name: 'Super Admin',
+  //   description: 'Full system access',
+  //   permissions: ['users', 'payments', 'settings', 'analytics', 'billing']
+  // },
+  {
+    id: "2",
+    name: "Support Staff",
+    description: "View clients, no payment actions",
+    permissions: ["users", "analytics"],
   },
-  { 
-    id: '2', 
-    name: 'Support Staff', 
-    description: 'View clients, no payment actions',
-    permissions: ['users', 'analytics']
-  },
-  { 
-    id: '3', 
-    name: 'Billing', 
-    description: 'Manage invoices only',
-    permissions: ['payments', 'billing']
+  {
+    id: "3",
+    name: "Billing",
+    description: "Manage invoices only",
+    permissions: ["payments", "billing"],
   },
 ];
 
 const allPermissions = [
-  { id: 'users', label: 'User Management', icon: Users },
-  { id: 'payments', label: 'Payment Processing', icon: Shield },
-  { id: 'settings', label: 'System Settings', icon: Settings },
-  { id: 'analytics', label: 'Analytics & Reports', icon: Eye },
-  { id: 'billing', label: 'Billing & Invoices', icon: UserPlus },
+  { id: "users", label: "User Management", icon: Users },
+  { id: "payments", label: "Payment Processing", icon: Shield },
+  { id: "settings", label: "System Settings", icon: Settings },
+  { id: "analytics", label: "Analytics & Reports", icon: Eye },
+  { id: "billing", label: "Billing & Invoices", icon: UserPlus },
 ];
 
 export const SuperAdminRoles: React.FC = () => {
@@ -71,14 +120,19 @@ export const SuperAdminRoles: React.FC = () => {
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isManagePermissionsOpen, setIsManagePermissionsOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
-  const [confirmAction, setConfirmAction] = useState<{ isOpen: boolean; action: () => void; title: string; message: string } | null>(null);
-  
+  const [confirmAction, setConfirmAction] = useState<{
+    isOpen: boolean;
+    action: () => void;
+    title: string;
+    message: string;
+  } | null>(null);
+
   const [newUser, setNewUser] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    role: '',
-    password: ''
+    firstName: "",
+    lastName: "",
+    email: "",
+    role: "",
+    password: "",
   });
 
   const handleAddUser = () => {
@@ -87,24 +141,39 @@ export const SuperAdminRoles: React.FC = () => {
       name: `${newUser.firstName} ${newUser.lastName}`,
       email: newUser.email,
       role: newUser.role,
-      lastLogin: 'Never',
-      status: 'Active'
+      lastLogin: "Never",
+      status: "Active",
     };
+    console.log("Users", newUser);
     setUsers([...users, user]);
-    setNewUser({ firstName: '', lastName: '', email: '', role: '', password: '' });
+    setNewUser({
+      firstName: "",
+      lastName: "",
+      email: "",
+      role: "",
+      password: "",
+    });
     setIsAddUserOpen(false);
   };
 
   const handleSuspendUser = (userId: string) => {
-    setUsers(users.map(user => 
-      user.id === userId 
-        ? { ...user, status: user.status === 'Active' ? 'Suspended' : 'Active' as 'Active' | 'Suspended' }
-        : user
-    ));
+    setUsers(
+      users.map((user) =>
+        user.id === userId
+          ? {
+              ...user,
+              status:
+                user.status === "Active"
+                  ? "Suspended"
+                  : ("Active" as "Active" | "Suspended"),
+            }
+          : user
+      )
+    );
   };
 
   const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
+    setUsers(users.filter((user) => user.id !== userId));
   };
 
   const handleManagePermissions = (role: Role) => {
@@ -114,25 +183,31 @@ export const SuperAdminRoles: React.FC = () => {
 
   const handlePermissionToggle = (permissionId: string) => {
     if (!selectedRole) return;
-    
+
     const updatedPermissions = selectedRole.permissions.includes(permissionId)
-      ? selectedRole.permissions.filter(p => p !== permissionId)
+      ? selectedRole.permissions.filter((p) => p !== permissionId)
       : [...selectedRole.permissions, permissionId];
-    
+
     setSelectedRole({ ...selectedRole, permissions: updatedPermissions });
-    setRoles(roles.map(role => 
-      role.id === selectedRole.id 
-        ? { ...role, permissions: updatedPermissions }
-        : role
-    ));
+    setRoles(
+      roles.map((role) =>
+        role.id === selectedRole.id
+          ? { ...role, permissions: updatedPermissions }
+          : role
+      )
+    );
   };
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'Super Admin': return 'bg-red-100 text-red-800';
-      case 'Support Staff': return 'bg-blue-100 text-blue-800';
-      case 'Billing': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case "Super Admin":
+        return "bg-red-100 text-red-800";
+      case "Support Staff":
+        return "bg-blue-100 text-blue-800";
+      case "Billing":
+        return "bg-green-100 text-green-800";
+      default:
+        return "bg-gray-100 text-gray-800";
     }
   };
 
@@ -141,10 +216,14 @@ export const SuperAdminRoles: React.FC = () => {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Team Members & Access Control</h1>
-          <p className="text-gray-600 mt-1">Manage internal team access and permissions</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Team Members & Access Control
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Manage internal team access and permissions
+          </p>
         </div>
-        
+
         <Dialog open={isAddUserOpen} onOpenChange={setIsAddUserOpen}>
           <DialogTrigger asChild>
             <Button className="bg-[#27AE60] hover:bg-[#1e8449] mt-4 sm:mt-0">
@@ -163,7 +242,9 @@ export const SuperAdminRoles: React.FC = () => {
                   <Input
                     id="firstName"
                     value={newUser.firstName}
-                    onChange={(e) => setNewUser({...newUser, firstName: e.target.value})}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, firstName: e.target.value })
+                    }
                     placeholder="John"
                   />
                 </div>
@@ -172,7 +253,9 @@ export const SuperAdminRoles: React.FC = () => {
                   <Input
                     id="lastName"
                     value={newUser.lastName}
-                    onChange={(e) => setNewUser({...newUser, lastName: e.target.value})}
+                    onChange={(e) =>
+                      setNewUser({ ...newUser, lastName: e.target.value })
+                    }
                     placeholder="Smith"
                   />
                 </div>
@@ -183,19 +266,28 @@ export const SuperAdminRoles: React.FC = () => {
                   id="email"
                   type="email"
                   value={newUser.email}
-                  onChange={(e) => setNewUser({...newUser, email: e.target.value})}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, email: e.target.value })
+                  }
                   placeholder="john@novafarm.com"
                 />
               </div>
               <div>
                 <Label htmlFor="role">Role</Label>
-                <Select value={newUser.role} onValueChange={(value) => setNewUser({...newUser, role: value})}>
+                <Select
+                  value={newUser.role}
+                  onValueChange={(value) =>
+                    setNewUser({ ...newUser, role: value })
+                  }
+                >
                   <SelectTrigger>
                     <SelectValue placeholder="Select role" />
                   </SelectTrigger>
                   <SelectContent>
-                    {roles.map(role => (
-                      <SelectItem key={role.id} value={role.name}>{role.name}</SelectItem>
+                    {roles.map((role) => (
+                      <SelectItem key={role.id} value={role.name}>
+                        {role.name}
+                      </SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
@@ -206,14 +298,21 @@ export const SuperAdminRoles: React.FC = () => {
                   id="password"
                   type="password"
                   value={newUser.password}
-                  onChange={(e) => setNewUser({...newUser, password: e.target.value})}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, password: e.target.value })
+                  }
                   placeholder="Enter temporary password"
                 />
               </div>
-              <Button 
+              <Button
                 onClick={handleAddUser}
                 className="w-full bg-[#27AE60] hover:bg-[#1e8449]"
-                disabled={!newUser.firstName || !newUser.lastName || !newUser.email || !newUser.role}
+                disabled={
+                  !newUser.firstName ||
+                  !newUser.lastName ||
+                  !newUser.email ||
+                  !newUser.role
+                }
               >
                 Send Access Invitation
               </Button>
@@ -242,9 +341,13 @@ export const SuperAdminRoles: React.FC = () => {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Name</TableHead>
-                      <TableHead className="hidden sm:table-cell">Email</TableHead>
+                      <TableHead className="hidden sm:table-cell">
+                        Email
+                      </TableHead>
                       <TableHead>Role</TableHead>
-                      <TableHead className="hidden md:table-cell">Last Login</TableHead>
+                      <TableHead className="hidden md:table-cell">
+                        Last Login
+                      </TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -255,10 +358,14 @@ export const SuperAdminRoles: React.FC = () => {
                         <TableCell className="font-medium">
                           <div>
                             <div>{user.name}</div>
-                            <div className="text-sm text-gray-500 sm:hidden">{user.email}</div>
+                            <div className="text-sm text-gray-500 sm:hidden">
+                              {user.email}
+                            </div>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">{user.email}</TableCell>
+                        <TableCell className="hidden sm:table-cell">
+                          {user.email}
+                        </TableCell>
                         <TableCell>
                           <Badge className={getRoleColor(user.role)}>
                             {user.role}
@@ -270,12 +377,10 @@ export const SuperAdminRoles: React.FC = () => {
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <Switch
-                              checked={user.status === 'Active'}
+                              checked={user.status === "Active"}
                               onCheckedChange={() => handleSuspendUser(user.id)}
                             />
-                            <span className="text-sm">
-                              {user.status}
-                            </span>
+                            <span className="text-sm">{user.status}</span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -283,15 +388,17 @@ export const SuperAdminRoles: React.FC = () => {
                             <Button variant="ghost" size="sm">
                               <Edit className="w-4 h-4" />
                             </Button>
-                            <Button 
-                              variant="ghost" 
+                            <Button
+                              variant="ghost"
                               size="sm"
-                              onClick={() => setConfirmAction({
-                                isOpen: true,
-                                action: () => handleDeleteUser(user.id),
-                                title: 'Delete Team Member',
-                                message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`
-                              })}
+                              onClick={() =>
+                                setConfirmAction({
+                                  isOpen: true,
+                                  action: () => handleDeleteUser(user.id),
+                                  title: "Delete Team Member",
+                                  message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
+                                })
+                              }
                             >
                               <Trash2 className="w-4 h-4 text-red-600" />
                             </Button>
@@ -314,9 +421,11 @@ export const SuperAdminRoles: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-lg">{role.name}</CardTitle>
-                      <p className="text-sm text-gray-600">{role.description}</p>
+                      <p className="text-sm text-gray-600">
+                        {role.description}
+                      </p>
                     </div>
-                    <Button 
+                    <Button
                       variant="outline"
                       onClick={() => handleManagePermissions(role)}
                     >
@@ -328,9 +437,15 @@ export const SuperAdminRoles: React.FC = () => {
                 <CardContent>
                   <div className="flex flex-wrap gap-2">
                     {role.permissions.map((permission) => {
-                      const perm = allPermissions.find(p => p.id === permission);
+                      const perm = allPermissions.find(
+                        (p) => p.id === permission
+                      );
                       return perm ? (
-                        <Badge key={permission} variant="secondary" className="bg-[#27AE60]/10 text-[#27AE60]">
+                        <Badge
+                          key={permission}
+                          variant="secondary"
+                          className="bg-[#27AE60]/10 text-[#27AE60]"
+                        >
                           <perm.icon className="w-3 h-3 mr-1" />
                           {perm.label}
                         </Badge>
@@ -345,7 +460,10 @@ export const SuperAdminRoles: React.FC = () => {
       </Tabs>
 
       {/* Manage Permissions Modal */}
-      <Dialog open={isManagePermissionsOpen} onOpenChange={setIsManagePermissionsOpen}>
+      <Dialog
+        open={isManagePermissionsOpen}
+        onOpenChange={setIsManagePermissionsOpen}
+      >
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>Manage Permissions - {selectedRole?.name}</DialogTitle>
@@ -364,7 +482,7 @@ export const SuperAdminRoles: React.FC = () => {
                 </div>
               </div>
             ))}
-            <Button 
+            <Button
               onClick={() => setIsManagePermissionsOpen(false)}
               className="w-full bg-[#27AE60] hover:bg-[#1e8449]"
             >

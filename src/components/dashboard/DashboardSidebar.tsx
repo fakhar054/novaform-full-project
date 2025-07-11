@@ -1,18 +1,18 @@
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Settings, 
-  CreditCard, 
-  FileText, 
-  HelpCircle, 
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  LayoutDashboard,
+  Settings,
+  CreditCard,
+  FileText,
+  HelpCircle,
   LogOut,
   Menu,
   X,
-  ExternalLink
-} from 'lucide-react';
-import { DashboardSection } from '../../pages/Dashboard';
+  ExternalLink,
+} from "lucide-react";
+import { DashboardSection } from "../../pages/Dashboard";
+import { toast } from "sonner";
 
 interface DashboardSidebarProps {
   activeSection: DashboardSection;
@@ -21,22 +21,36 @@ interface DashboardSidebarProps {
 
 export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activeSection,
-  onSectionChange
+  onSectionChange,
 }) => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
 
   const menuItems = [
-    { id: 'overview' as DashboardSection, label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'account' as DashboardSection, label: 'Account Settings', icon: Settings },
-    { id: 'subscription' as DashboardSection, label: 'Subscription', icon: CreditCard },
-    { id: 'invoices' as DashboardSection, label: 'Invoices', icon: FileText },
-    { id: 'support' as DashboardSection, label: 'Support', icon: HelpCircle },
+    {
+      id: "overview" as DashboardSection,
+      label: "Dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      id: "account" as DashboardSection,
+      label: "Account Settings",
+      icon: Settings,
+    },
+    {
+      id: "subscription" as DashboardSection,
+      label: "Subscription",
+      icon: CreditCard,
+    },
+    { id: "invoices" as DashboardSection, label: "Invoices", icon: FileText },
+    { id: "support" as DashboardSection, label: "Support", icon: HelpCircle },
   ];
 
   const handleLogout = () => {
-    // Add logout logic here
-    navigate('/');
+    localStorage.removeItem("sb-ajbxscredobhqfksaqrk-auth-token");
+    navigate("/");
+    toast.success("Logout");
+    console.log("Logout");
   };
 
   const handleMenuClick = (section: DashboardSection) => {
@@ -47,7 +61,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const handleEnterPlatform = () => {
     // This will redirect to the NovaFarm platform login
     // Replace with actual URL when provided
-    window.open('#', '_blank');
+    window.open("#", "_blank");
   };
 
   return (
@@ -58,24 +72,30 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
           className="bg-white p-2 rounded-lg shadow-lg border"
         >
-          {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {isMobileMenuOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
         </button>
       </div>
 
       {/* Mobile overlay */}
       {isMobileMenuOpen && (
-        <div 
+        <div
           className="lg:hidden fixed inset-0 bg-black bg-opacity-50 z-30"
           onClick={() => setIsMobileMenuOpen(false)}
         />
       )}
 
       {/* Sidebar */}
-      <div className={`
+      <div
+        className={`
         fixed top-0 left-0 h-full w-64 bg-white shadow-xl border-r z-40 transform transition-transform duration-300 ease-in-out
-        ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'}
+        ${isMobileMenuOpen ? "translate-x-0" : "-translate-x-full"}
         lg:translate-x-0
-      `}>
+      `}
+      >
         <div className="p-6 border-b">
           <h1 className="text-xl font-bold text-[#078147]">NovaFarm</h1>
           <p className="text-sm text-gray-600 mt-1">Dashboard</p>
@@ -85,16 +105,17 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           {menuItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
-            
+
             return (
               <button
                 key={item.id}
                 onClick={() => handleMenuClick(item.id)}
                 className={`
                   w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors
-                  ${isActive 
-                    ? 'bg-[#078147] text-white shadow-md' 
-                    : 'text-gray-700 hover:bg-gray-100'
+                  ${
+                    isActive
+                      ? "bg-[#078147] text-white shadow-md"
+                      : "text-gray-700 hover:bg-gray-100"
                   }
                 `}
               >

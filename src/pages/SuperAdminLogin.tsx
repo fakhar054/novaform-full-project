@@ -17,9 +17,10 @@ import {
   InputOTPGroup,
   InputOTPSlot,
 } from "@/components/ui/input-otp";
-import { Link, useNavigate } from "react-router-dom";
-import { useToast } from "@/hooks/use-toast";
+import { useNavigate } from "react-router-dom";
+// import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { toast } from "sonner";
 
 type LoginStep = "credentials" | "2fa";
 
@@ -34,7 +35,7 @@ const SuperAdminLogin = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "", code: "" });
   const navigate = useNavigate();
-  const { toast } = useToast();
+  // const { toast } = useToast();
 
   // service_role="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqYnhzY3JlZG9iaHFma3NhcXJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0Njc5OSwiZXhwIjoyMDY3MDIyNzk5fQ.j6nw62zCVFO588aqJsSoviv7qVuIjpnTIqFUon-nJVU"
 
@@ -59,11 +60,7 @@ const SuperAdminLogin = () => {
         await supabase.auth.signInWithPassword({ email, password });
 
       if (authError || !authData?.user) {
-        toast({
-          title: "Login failed",
-          description: authError?.message || "Invalid credentials",
-          variant: "destructive",
-        });
+        toast.error("Login failed");
         console.log("auth error:", authError);
         return;
       }
@@ -81,11 +78,7 @@ const SuperAdminLogin = () => {
       if (userError || !userData) {
         console.log("userError:", userError);
         console.log("userData:", userData);
-        toast({
-          title: "Access denied",
-          description: "User not found or unauthorized.",
-          variant: "destructive",
-        });
+        toast.error("User not found or unauthorized.");
         return;
       }
 
@@ -93,28 +86,23 @@ const SuperAdminLogin = () => {
 
       // Step 3: Role check
       if (userData.role !== "super-admin") {
-        toast({
-          title: "Access denied",
-          description: "You are not a super admin.",
-          variant: "destructive",
-        });
+        toast.error("You are not a super admin.");
         return;
       }
 
       // ✅ All checks passed – move to 2FA
       setStep("2fa");
-      toast({
-        title: "Login successful",
-        description: "Verification code sent to your email.",
-      });
-      alert("Login Successful");
+      // toast({
+      //   title: "Login successful",
+      //   description: "Verification code sent to your email.",
+      // });
+      toast.success("Welcome back!");
+
+      // alert("Login Successful");
+      navigate("/super-admin");
     } catch (err) {
       console.error("Unexpected error:", err);
-      toast({
-        title: "Unexpected Error",
-        description: "Please try again later.",
-        variant: "destructive",
-      });
+      toast.error("Unexpected Error");
     } finally {
       setIsLoading(false);
     }
@@ -203,10 +191,7 @@ const SuperAdminLogin = () => {
         }
 
         navigate("/super-admin");
-        toast({
-          title: "Access granted!",
-          description: "Welcome to the Super Admin Dashboard",
-        });
+        toast("Access granted!");
       } else {
         setErrors({
           ...errors,
@@ -220,10 +205,7 @@ const SuperAdminLogin = () => {
 
   const handleResendCode = () => {
     setErrors({ ...errors, code: "" });
-    toast({
-      title: "Code resent",
-      description: "A new verification code has been sent to your email",
-    });
+    toast.success("A new verification code has been sent to your email");
   };
 
   const handleForgotPassword = (e: React.FormEvent) => {
@@ -232,20 +214,14 @@ const SuperAdminLogin = () => {
     const resetEmail = formData.get("resetEmail") as string;
 
     if (!resetEmail || !/\S+@\S+\.\S+/.test(resetEmail)) {
-      toast({
-        title: "Invalid email",
-        description: "Please enter a valid email address",
-        variant: "destructive",
-      });
+      toast.error("Please enter a valid email address");
       return;
     }
 
     // Simulate password reset
-    toast({
-      title: "Reset link sent",
-      description:
-        "If this email is registered, you'll receive reset instructions shortly",
-    });
+    toast(
+      "If this email is registered, you'll receive reset instructions shortly"
+    );
     setShowForgotPassword(false);
   };
 

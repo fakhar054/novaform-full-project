@@ -15,12 +15,13 @@ import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PasswordStrength } from "@/components/ui/password-strength";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 
 import supabaseAdmin from "@/integrations/supabase/superadmin";
 
 export const SuperAdminAccounts: React.FC = () => {
-  const { toast } = useToast();
+  // const { toast } = useToast();
   const [isCreating, setIsCreating] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [formData, setFormData] = useState({
@@ -72,11 +73,7 @@ export const SuperAdminAccounts: React.FC = () => {
 
     if (authError) {
       console.error("Error creating auth user:", authError.message);
-      toast({
-        title: "Error creating user",
-        description: authError.message,
-        variant: "destructive",
-      });
+      toast.error("Error creating user");
       return;
     }
 
@@ -108,19 +105,12 @@ export const SuperAdminAccounts: React.FC = () => {
 
     if (dbError) {
       console.error("Error inserting to users table:", dbError.message);
-      toast({
-        title: "User created in auth, but failed in DB",
-        description: dbError.message,
-        variant: "destructive",
-      });
+      toast.error("User created in auth, but failed in DB");
       return;
     }
 
-    console.log("✅ User created and saved to DB");
-    toast({
-      title: "Account Created Successfully",
-      description: `Account for ${formData.businessName} has been created.`,
-    });
+    console.log("User created and saved to DB");
+    toast("Account Created Successfully");
 
     // Reset form
     setFormData({
