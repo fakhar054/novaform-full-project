@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Users,
   Plus,
@@ -40,7 +40,7 @@ import {
 } from "@/components/ui/select";
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmActionModal } from "./ConfirmActionModal";
-
+import { supabase } from "@/integrations/supabase/client";
 
 interface AdminUser {
   id: string;
@@ -117,6 +117,7 @@ const allPermissions = [
 export const SuperAdminRoles: React.FC = () => {
   const [users, setUsers] = useState<AdminUser[]>(mockUsers);
   const [roles, setRoles] = useState<Role[]>(mockRoles);
+  const [all_users, set_all_users] = useState([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isManagePermissionsOpen, setIsManagePermissionsOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
@@ -135,25 +136,185 @@ export const SuperAdminRoles: React.FC = () => {
     password: "",
   });
 
-  const handleAddUser = () => {
-    const user: AdminUser = {
-      id: Date.now().toString(),
-      name: `${newUser.firstName} ${newUser.lastName}`,
-      email: newUser.email,
-      role: newUser.role,
-      lastLogin: "Never",
-      status: "Active",
-    };
-    console.log("Users", newUser);
-    setUsers([...users, user]);
-    setNewUser({
-      firstName: "",
-      lastName: "",
-      email: "",
-      role: "",
-      password: "",
-    });
-    setIsAddUserOpen(false);
+  const fetchUsers = async () => {
+    const { data, error } = await supabase.from("team_mate").select("*");
+
+    if (error) {
+      console.error("Error fetching users:", error.message);
+      return [];
+    }
+    set_all_users(data);
+
+    return data;
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  console.log("Fetched users from state:", all_users);
+
+  const handle_DeleteUser = async (id) => {
+    const { data, error } = await supabase
+      .from("team_mate")
+      .delete()
+      .eq("id", id);
+
+    if (error) {
+      console.error("Error fetching users:", error.message);
+      return [];
+    }
+
+    console.log("Fetched users:", data);
+    return data;
+  };
+
+  // const handleAddUser = async (e) => {
+  //   e.preventDefault();
+
+  //   const { firstName, lastName, email, role, password } = newUser;
+  //   const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+  //   try {
+  //     // Get current session (assumes super admin is logged in)
+  //     const {
+  //       data: { session },
+  //       error: sessionError,
+  //     } = await supabase.auth.getSession();
+
+  //     if (sessionError || !session?.access_token) {
+  //       console.error("No valid session found.");
+  //       alert("Unauthorized: Please log in as Super Admin.");
+  //       return;
+  //     }
+
+  //     const res = await fetch(
+  //       "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/add-user-with-role",
+  //       {
+  //         method: "POST",
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${session.access_token}`,
+  //         },
+  //         body: JSON.stringify({
+  //           email,
+  //           password,
+  //           name: fullName,
+  //           role,
+  //         }),
+  //       }
+  //     );
+
+  //     const result = await res.json();
+
+  //     if (res.ok) {
+  //       alert("User created!");
+  //       setUsers((prev) => [...prev, { name: fullName, email, role }]);
+  //       setNewUser({
+  //         firstName: "",
+  //         lastName: "",
+  //         email: "",
+  //         role: "",
+  //         password: "",
+  //       });
+  //       setIsAddUserOpen(false);
+  //     } else {
+  //       const errorMessage = result?.error?.message || "Unknown error occurred";
+  //       console.error("Error:", errorMessage);
+  //       alert("Failed to create user: " + errorMessage);
+  //     }
+  //   } catch (err) {
+  //     console.error("Network or server error:", err);
+  //     alert("Failed to create user: Network or server error.");
+  //   }
+  // };
+
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+
+    const { firstName, lastName, email, role, password } = newUser;
+    const fullName = `${firstName.trim()} ${lastName.trim()}`;
+
+    try {
+      // Get current session (assumes super admin is logged in)
+      const {
+        data: { session },
+        error: sessionError,
+      } = await supabase.auth.getSession();
+
+      if (sessionError || !session?.access_token) {
+        console.error("No valid session found.");
+        alert("Unauthorized: Please log in as Super Admin.");
+        return;
+      }
+
+      const res = await fetch(
+        "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/add-user-with-role",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session.access_token}`,
+          },
+          body: JSON.stringify({
+            email,
+            password,
+            name: fullName,
+            role,
+            status: true,
+          }),
+        }
+      );
+
+      const result = await res.json();
+
+      if (res.ok) {
+        alert("User created!");
+        setUsers((prev) => [...prev, { name: fullName, email, role }]);
+        setNewUser({
+          firstName: "",
+          lastName: "",
+          email: "",
+          role: "",
+          password: "",
+        });
+        setIsAddUserOpen(false);
+      } else {
+        const errorMessage =
+          typeof result?.error === "string"
+            ? result.error
+            : result?.error?.message || "Unknown error occurred";
+
+        console.error("Error:", errorMessage);
+        alert("Failed to create user: " + errorMessage);
+      }
+    } catch (err) {
+      console.error("Network or server error:", err);
+      alert("Failed to create user: Network or server error.");
+    }
+  };
+
+  const handleAddUser_main = async () => {
+    const res = await fetch(
+      "https://your-project-id.supabase.co/functions/v1/add-user",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          email: "support@example.com",
+          password: "12345678",
+          role: "support",
+          active: true, // or false
+          name: "Support Staff",
+          phone: "1234567890", // example of another custom field
+        }),
+      }
+    );
+
+    const data = await res.json();
+    console.log(data);
   };
 
   const handleSuspendUser = (userId: string) => {
@@ -332,7 +493,7 @@ export const SuperAdminRoles: React.FC = () => {
             <CardHeader>
               <CardTitle className="flex items-center">
                 <Users className="w-5 h-5 mr-2 text-[#27AE60]" />
-                Team Members ({users.length})
+                Team Members ({all_users.length})
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -353,7 +514,7 @@ export const SuperAdminRoles: React.FC = () => {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {users.map((user) => (
+                    {all_users.map((user) => (
                       <TableRow key={user.id}>
                         <TableCell className="font-medium">
                           <div>
@@ -372,15 +533,17 @@ export const SuperAdminRoles: React.FC = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-sm text-gray-600">
-                          {user.lastLogin}
+                          {user.last_login}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <Switch
-                              checked={user.status === "Active"}
+                              checked={user.status}
                               onCheckedChange={() => handleSuspendUser(user.id)}
                             />
-                            <span className="text-sm">{user.status}</span>
+                            <span className="text-sm">
+                              {user.status ? "Active" : "Suspended"}
+                            </span>
                           </div>
                         </TableCell>
                         <TableCell>
@@ -400,7 +563,10 @@ export const SuperAdminRoles: React.FC = () => {
                                 })
                               }
                             >
-                              <Trash2 className="w-4 h-4 text-red-600" />
+                              <Trash2
+                                className="w-4 h-4 text-red-600"
+                                onClick={() => handle_DeleteUser(user.id)}
+                              />
                             </Button>
                           </div>
                         </TableCell>

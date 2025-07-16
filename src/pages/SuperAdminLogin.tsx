@@ -39,6 +39,74 @@ const SuperAdminLogin = () => {
 
   // service_role="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqYnhzY3JlZG9iaHFma3NhcXJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0Njc5OSwiZXhwIjoyMDY3MDIyNzk5fQ.j6nw62zCVFO588aqJsSoviv7qVuIjpnTIqFUon-nJVU"
 
+  // const handleCredentialsSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setErrors({ email: "", password: "", code: "" });
+
+  //   if (!email) {
+  //     setErrors((prev) => ({ ...prev, email: "Email is required" }));
+  //     return;
+  //   }
+  //   if (!password) {
+  //     setErrors((prev) => ({ ...prev, password: "Password is required" }));
+  //     return;
+  //   }
+
+  //   setIsLoading(true);
+
+  //   try {
+  //     // Step 1: Authenticate with Supabase
+  //     const { data: authData, error: authError } =
+  //       await supabase.auth.signInWithPassword({ email, password });
+
+  //     if (authError || !authData?.user) {
+  //       toast.error("Login failed");
+  //       console.log("auth error:", authError);
+  //       return;
+  //     }
+
+  //     const userId = authData.user.id;
+  //     console.log("Authenticated user ID:", userId);
+
+  //     // Step 2: Fetch user role
+  //     const { data: userData, error: userError } = await (supabase as any)
+  //       .from("users")
+  //       .select("role")
+  //       .eq("uuid", userId)
+  //       .single();
+
+  //     if (userError || !userData) {
+  //       console.log("userError:", userError);
+  //       console.log("userData:", userData);
+  //       toast.error("User not found or unauthorized.");
+  //       return;
+  //     }
+
+  //     console.log("User role:", userData.role);
+
+  //     // Step 3: Role check
+  //     if (userData.role !== "super-admin") {
+  //       toast.error("You are not a super admin.");
+  //       return;
+  //     }
+
+  //     // ✅ All checks passed – move to 2FA
+  //     setStep("2fa");
+  //     // toast({
+  //     //   title: "Login successful",
+  //     //   description: "Verification code sent to your email.",
+  //     // });
+  //     toast.success("Welcome back!");
+
+  //     // alert("Login Successful");
+  //     navigate("/super-admin");
+  //   } catch (err) {
+  //     console.error("Unexpected error:", err);
+  //     toast.error("Unexpected Error");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({ email: "", password: "", code: "" });
@@ -57,7 +125,10 @@ const SuperAdminLogin = () => {
     try {
       // Step 1: Authenticate with Supabase
       const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({ email, password });
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
 
       if (authError || !authData?.user) {
         toast.error("Login failed");
@@ -68,11 +139,11 @@ const SuperAdminLogin = () => {
       const userId = authData.user.id;
       console.log("Authenticated user ID:", userId);
 
-      // Step 2: Fetch user role
-      const { data: userData, error: userError } = await (supabase as any)
-        .from("users")
+      // ✅ Step 2: Fetch role from correct table and column
+      const { data: userData, error: userError } = await supabase
+        .from("team_mate")
         .select("role")
-        .eq("uuid", userId)
+        .eq("user_id", userId)
         .single();
 
       if (userError || !userData) {
@@ -85,20 +156,14 @@ const SuperAdminLogin = () => {
       console.log("User role:", userData.role);
 
       // Step 3: Role check
-      if (userData.role !== "super-admin") {
-        toast.error("You are not a super admin.");
+      if (userData.role === "user") {
+        toast.error("You are simple user.");
         return;
       }
 
       // ✅ All checks passed – move to 2FA
       setStep("2fa");
-      // toast({
-      //   title: "Login successful",
-      //   description: "Verification code sent to your email.",
-      // });
       toast.success("Welcome back!");
-
-      // alert("Login Successful");
       navigate("/super-admin");
     } catch (err) {
       console.error("Unexpected error:", err);
@@ -107,64 +172,6 @@ const SuperAdminLogin = () => {
       setIsLoading(false);
     }
   };
-
-  // const handleCredentialsSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-
-  //   console.log("form submitted successsful;y", email, password);
-
-  //   // Basic validation
-  //   // const newErrors = { email: "", password: "", code: "" };
-
-  //   // if (!email) {
-  //   //   newErrors.email = "Email is required";
-  //   // } else if (!/\S+@\S+\.\S+/.test(email)) {
-  //   //   newErrors.email = "Please enter a valid email";
-  //   // }
-
-  //   // if (!password) {
-  //   //   newErrors.password = "Password is required";
-  //   // } else if (password.length < 6) {
-  //   //   newErrors.password = "Password must be at least 6 characters";
-  //   // }
-
-  //   // setErrors(newErrors);
-
-  //   // if (!newErrors.email && !newErrors.password) {
-  //   //   setIsLoading(true);
-
-  //   //   // Simulate API call for credential verification
-  //   //   setTimeout(() => {
-  //   //     // Check if remember me is enabled and user was remembered
-  //   //     const rememberedUser = localStorage.getItem("superadmin_remembered");
-  //   //     const rememberExpiry = localStorage.getItem(
-  //   //       "superadmin_remember_expiry"
-  //   //     );
-
-  //   //     if (
-  //   //       rememberMe &&
-  //   //       rememberedUser === email &&
-  //   //       rememberExpiry &&
-  //   //       new Date() < new Date(rememberExpiry)
-  //   //     ) {
-  //   //       // Skip 2FA if remembered and not expired
-  //   //       navigate("/super-admin");
-  //   //       toast({
-  //   //         title: "Welcome back!",
-  //   //         description: "Logged in successfully (remembered device)",
-  //   //       });
-  //   //     } else {
-  //   //       // Proceed to 2FA
-  //   //       setStep("2fa");
-  //   //       toast({
-  //   //         title: "Verification code sent",
-  //   //         description: "Please check your email for the 6-digit code",
-  //   //       });
-  //   //     }
-  //   //     setIsLoading(false);
-  //   //   }, 1000);
-  //   // }
-  // };
 
   const handleTwoFactorSubmit = async () => {
     if (verificationCode.length !== 6) {
