@@ -37,8 +37,70 @@ const SuperAdminLogin = () => {
   const navigate = useNavigate();
   // const { toast } = useToast();
 
-  // service_role="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqYnhzY3JlZG9iaHFma3NhcXJrIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTQ0Njc5OSwiZXhwIjoyMDY3MDIyNzk5fQ.j6nw62zCVFO588aqJsSoviv7qVuIjpnTIqFUon-nJVU"
+  const handleCredentialsSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrors({ email: "", password: "", code: "" });
 
+    if (!email) {
+      setErrors((prev) => ({ ...prev, email: "Email is required" }));
+      return;
+    }
+    if (!password) {
+      setErrors((prev) => ({ ...prev, password: "Password is required" }));
+      return;
+    }
+
+    setIsLoading(true);
+
+    try {
+      const { data: authData, error: authError } =
+        await supabase.auth.signInWithPassword({ email, password });
+
+      if (authError || !authData?.user) {
+        toast.error("Login failed");
+        return;
+      }
+
+      const userId = authData.user.id;
+      console.log("Authenticated user ID:", userId);
+
+      // Check users table
+      const { data: userData } = await supabase
+        .from("users")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (userData?.role === "super-admin") {
+        // setStep("2fa"); // Show 2FA screen
+        toast.success("Welcome Super Admin!");
+        navigate("/super-admin");
+        return;
+      }
+
+      // Else check team_mate
+      const { data: teamData } = await supabase
+        .from("team_mate")
+        .select("role")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (teamData) {
+        toast.success(`Welcome ${teamData.role}!`);
+        navigate(`/super-admin`);
+        return;
+      }
+
+      toast.error("User not found in either table.");
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Unexpected Error");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  //work for super admin login
   // const handleCredentialsSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
   //   setErrors({ email: "", password: "", code: "" });
@@ -107,71 +169,73 @@ const SuperAdminLogin = () => {
   //     setIsLoading(false);
   //   }
   // };
-  const handleCredentialsSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErrors({ email: "", password: "", code: "" });
 
-    if (!email) {
-      setErrors((prev) => ({ ...prev, email: "Email is required" }));
-      return;
-    }
-    if (!password) {
-      setErrors((prev) => ({ ...prev, password: "Password is required" }));
-      return;
-    }
+  //working for login of teamate
+  // const handleCredentialsSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   setErrors({ email: "", password: "", code: "" });
 
-    setIsLoading(true);
+  //   if (!email) {
+  //     setErrors((prev) => ({ ...prev, email: "Email is required" }));
+  //     return;
+  //   }
+  //   if (!password) {
+  //     setErrors((prev) => ({ ...prev, password: "Password is required" }));
+  //     return;
+  //   }
 
-    try {
-      // Step 1: Authenticate with Supabase
-      const { data: authData, error: authError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+  //   setIsLoading(true);
 
-      if (authError || !authData?.user) {
-        toast.error("Login failed");
-        console.log("auth error:", authError);
-        return;
-      }
+  //   try {
+  //     // Step 1: Authenticate with Supabase
+  //     const { data: authData, error: authError } =
+  //       await supabase.auth.signInWithPassword({
+  //         email,
+  //         password,
+  //       });
 
-      const userId = authData.user.id;
-      console.log("Authenticated user ID:", userId);
+  //     if (authError || !authData?.user) {
+  //       toast.error("Login failed");
+  //       console.log("auth error:", authError);
+  //       return;
+  //     }
 
-      // ✅ Step 2: Fetch role from correct table and column
-      const { data: userData, error: userError } = await supabase
-        .from("team_mate")
-        .select("role")
-        .eq("user_id", userId)
-        .single();
+  //     const userId = authData.user.id;
+  //     console.log("Authenticated user ID:", userId);
 
-      if (userError || !userData) {
-        console.log("userError:", userError);
-        console.log("userData:", userData);
-        toast.error("User not found or unauthorized.");
-        return;
-      }
+  //     // ✅ Step 2: Fetch role from correct table and column
+  //     const { data: userData, error: userError } = await supabase
+  //       .from("team_mate")
+  //       .select("role")
+  //       .eq("user_id", userId)
+  //       .single();
 
-      console.log("User role:", userData.role);
+  //     if (userError || !userData) {
+  //       console.log("userError:", userError);
+  //       console.log("userData:", userData);
+  //       toast.error("User not found or unauthorized.");
+  //       return;
+  //     }
 
-      // Step 3: Role check
-      if (userData.role === "user") {
-        toast.error("You are simple user.");
-        return;
-      }
+  //     console.log("User role:", userData.role);
 
-      // ✅ All checks passed – move to 2FA
-      setStep("2fa");
-      toast.success("Welcome back!");
-      navigate("/super-admin");
-    } catch (err) {
-      console.error("Unexpected error:", err);
-      toast.error("Unexpected Error");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  //     // Step 3: Role check
+  //     if (userData.role === "user") {
+  //       toast.error("You are simple user.");
+  //       return;
+  //     }
+
+  //     // ✅ All checks passed – move to 2FA
+  //     setStep("2fa");
+  //     toast.success("Welcome back!");
+  //     navigate("/super-admin");
+  //   } catch (err) {
+  //     console.error("Unexpected error:", err);
+  //     toast.error("Unexpected Error");
+  //   } finally {
+  //     setIsLoading(false);
+  //   }
+  // };
 
   const handleTwoFactorSubmit = async () => {
     if (verificationCode.length !== 6) {

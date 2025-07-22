@@ -1,18 +1,149 @@
-import React, { useState } from 'react';
-import { Shield, Globe, Palette, Bell, Database, Lock, CreditCard, Mail, Webhook, Key, Eye, EyeOff, Copy, RefreshCw } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Switch } from '@/components/ui/switch';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
-import { useToast } from '@/hooks/use-toast';
+import React, { useState, useEffect } from "react";
+import {
+  Shield,
+  Globe,
+  Palette,
+  Bell,
+  Database,
+  Lock,
+  CreditCard,
+  Mail,
+  Webhook,
+  Key,
+  Eye,
+  EyeOff,
+  Copy,
+  RefreshCw,
+} from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Switch } from "@/components/ui/switch";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+// import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
+import { supabase } from "@/integrations/supabase/client";
 
 export const SuperAdminSettings: React.FC = () => {
-  const { toast } = useToast();
-  
+  // const { toast } = useToast();
+  const [imageUrl, setImageUrl] = useState(null);
+  const [settings_data, setSettings_data] = useState(null);
+  const [loading_data, set_loading_data] = useState(true);
+  const [preview, setPreview] = useState(null);
+  const [faviconPreview, setFaviconPreview] = useState(null);
+
+  const [formData, setFormData] = useState({
+    two_factor_auth: true,
+    session_storage_time: 0,
+    platform_name: "",
+    support_email: "",
+    languages: [],
+    selected_language: "",
+    maximun_users: 0,
+    email_verification: false,
+    stripe_publish_key: "",
+    stripe_secret_key: "",
+    webhook_endpoint: "",
+    webhook_secret_key: "",
+    email_service_provider: [],
+    selected_email_service_provider: "",
+    api_key: "",
+    form_name: "",
+    from_email: "",
+    reply_to_email: "",
+    auto_transactional_emails: true,
+    email_notifications: true,
+    sms_notifications: true,
+    allow_user_registration: true,
+  });
+
+  const handleChange = (e) => {
+    const { name, value, type } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "number" ? parseInt(value) : value,
+    }));
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const { error } = await supabase
+      .from("settings")
+      .update(formData)
+      .eq("id", 3);
+
+    if (error) {
+      console.error("Update failed:", error.message);
+    } else {
+      toast.success("Update successful");
+      console.log("Update successful");
+    }
+  };
+
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("*")
+        .single();
+
+      if (error) {
+        console.error("Error fetching settings:", error.message);
+      } else {
+        setSettings_data(data);
+        set_loading_data(false);
+
+        if (data) {
+          console.log("setting data into form Component", data);
+          setFormData({
+            two_factor_auth: data.two_factor_auth,
+            session_storage_time: data.session_storage_time,
+            platform_name: data.platform_name,
+            support_email: data.support_email,
+            languages: data.languages || [],
+            selected_language: data.selected_language || "",
+            maximun_users: data.maximun_users,
+            email_verification: data.email_verification,
+            stripe_publish_key: data.stripe_publish_key,
+            stripe_secret_key: data.stripe_secret_key,
+            webhook_secret_key: data.webhook_secret_key,
+            webhook_endpoint: data.webhook_endpoint,
+            email_service_provider: data.email_service_provider || [],
+            selected_email_service_provider:
+              data.selected_email_service_provider || "",
+            api_key: data.api_key,
+            form_name: data.form_name,
+            from_email: data.from_email,
+            reply_to_email: data.reply_to_email,
+            auto_transactional_emails: data.auto_transactional_emails,
+            allow_user_registration: data.allow_user_registration,
+            sms_notifications: data.sms_notifications,
+            email_notifications: data.email_notifications,
+          });
+        }
+      }
+    };
+
+    fetchSettings();
+  }, []);
+
+  console.log("data coming from server ", settings_data);
+
   // Existing settings state
   const [settings, setSettings] = useState({
     twoFactorEnabled: true,
@@ -20,32 +151,32 @@ export const SuperAdminSettings: React.FC = () => {
     smsNotifications: false,
     maintenanceMode: false,
     autoBackups: true,
-    platformName: 'NovaFarm',
-    supportEmail: 'support@novafarm.com',
-    maxUsers: '1000',
-    sessionTimeout: '30',
-    apiRateLimit: '1000',
-    defaultLanguage: 'it',
+    platformName: "NovaFarm",
+    supportEmail: "support@novafarm.com",
+    maxUsers: "1000",
+    sessionTimeout: "30",
+    apiRateLimit: "1000",
+    defaultLanguage: "it",
     allowRegistration: true,
-    requireEmailVerification: true
+    requireEmailVerification: true,
   });
 
   // New advanced settings state
   const [stripeSettings, setStripeSettings] = useState({
-    publishableKey: '',
-    secretKey: '',
-    webhookSecret: '',
+    publishableKey: "",
+    secretKey: "",
+    webhookSecret: "",
     liveMode: false,
-    connected: false
+    connected: false,
   });
 
   const [emailSettings, setEmailSettings] = useState({
-    provider: 'resend',
-    apiKey: '',
-    fromName: 'NovaFarm',
-    fromEmail: 'noreply@novafarm.com',
-    replyTo: 'support@novafarm.com',
-    transactionalEnabled: true
+    provider: "resend",
+    apiKey: "",
+    fromName: "NovaFarm",
+    fromEmail: "noreply@novafarm.com",
+    replyTo: "support@novafarm.com",
+    transactionalEnabled: true,
   });
 
   const [webhookSettings, setWebhookSettings] = useState({
@@ -53,46 +184,57 @@ export const SuperAdminSettings: React.FC = () => {
       userRegistered: true,
       paymentCompleted: true,
       subscriptionCancelled: false,
-      ticketCreated: true
+      ticketCreated: true,
     },
-    secret: 'wh_sec_••••••••••••••••'
+    secret: "wh_sec_••••••••••••••••",
   });
 
   const [apiSettings, setApiSettings] = useState({
-    adminApiKey: 'sk_••••••••••••••••',
-    ipWhitelist: '',
+    adminApiKey: "sk_••••••••••••••••",
+    ipWhitelist: "",
     enableApiAccess: true,
     requestsPerHour: 1000,
-    enableRateLimit: true
+    enableRateLimit: true,
   });
 
   // Modal states
   const [testEmailModal, setTestEmailModal] = useState(false);
   const [regenerateWebhookModal, setRegenerateWebhookModal] = useState(false);
   const [regenerateApiKeyModal, setRegenerateApiKeyModal] = useState(false);
-  const [testEmailData, setTestEmailData] = useState({ to: '', subject: '', message: '' });
+  const [testEmailData, setTestEmailData] = useState({
+    to: "",
+    subject: "",
+    message: "",
+  });
   const [showSecrets, setShowSecrets] = useState({
     stripeSecret: false,
     webhookSecret: false,
-    apiKey: false
+    apiKey: false,
   });
   const [loading, setLoading] = useState({
     stripeTest: false,
-    emailTest: false
+    emailTest: false,
   });
 
-  const handleSettingChange = (key: string, value: boolean | string) => {
-    setSettings(prev => ({
+  const handleSettingChange = (name, value) => {
+    setFormData((prev) => ({
       ...prev,
-      [key]: value
+      [name]: value,
+    }));
+  };
+
+  const handle_auto_transactional_emails = (name, value) => {
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value,
     }));
   };
 
   const handleStripeTest = async () => {
-    setLoading(prev => ({ ...prev, stripeTest: true }));
+    setLoading((prev) => ({ ...prev, stripeTest: true }));
     setTimeout(() => {
-      setLoading(prev => ({ ...prev, stripeTest: false }));
-      setStripeSettings(prev => ({ ...prev, connected: true }));
+      setLoading((prev) => ({ ...prev, stripeTest: false }));
+      setStripeSettings((prev) => ({ ...prev, connected: true }));
       toast({
         title: "Stripe Connection Test",
         description: "Connection test successful (simulation only)",
@@ -101,11 +243,11 @@ export const SuperAdminSettings: React.FC = () => {
   };
 
   const handleSendTestEmail = async () => {
-    setLoading(prev => ({ ...prev, emailTest: true }));
+    setLoading((prev) => ({ ...prev, emailTest: true }));
     setTimeout(() => {
-      setLoading(prev => ({ ...prev, emailTest: false }));
+      setLoading((prev) => ({ ...prev, emailTest: false }));
       setTestEmailModal(false);
-      setTestEmailData({ to: '', subject: '', message: '' });
+      setTestEmailData({ to: "", subject: "", message: "" });
       toast({
         title: "Test Email Sent",
         description: "Email sent successfully (simulated)",
@@ -114,9 +256,9 @@ export const SuperAdminSettings: React.FC = () => {
   };
 
   const handleRegenerateWebhook = () => {
-    setWebhookSettings(prev => ({ 
-      ...prev, 
-      secret: 'wh_sec_' + Math.random().toString(36).substring(2, 18) 
+    setWebhookSettings((prev) => ({
+      ...prev,
+      secret: "wh_sec_" + Math.random().toString(36).substring(2, 18),
     }));
     setRegenerateWebhookModal(false);
     toast({
@@ -126,9 +268,9 @@ export const SuperAdminSettings: React.FC = () => {
   };
 
   const handleRegenerateApiKey = () => {
-    setApiSettings(prev => ({ 
-      ...prev, 
-      adminApiKey: 'sk_' + Math.random().toString(36).substring(2, 18) 
+    setApiSettings((prev) => ({
+      ...prev,
+      adminApiKey: "sk_" + Math.random().toString(36).substring(2, 18),
     }));
     setRegenerateApiKeyModal(false);
     toast({
@@ -146,21 +288,104 @@ export const SuperAdminSettings: React.FC = () => {
   };
 
   const handleSaveSettings = () => {
-    console.log('Saving settings:', settings);
+    console.log("Saving settings:", settings);
     toast({
       title: "Settings Saved",
       description: "Platform settings have been updated successfully.",
     });
   };
 
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    const { data, error } = await supabase.storage
+      .from("logo") //  bucket name
+      .upload(`public/${file.name}`, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Upload error:", error.message);
+      return;
+    }
+
+    // 3. Get public URL
+    const { data: publicUrlData } = supabase.storage
+      .from("logo")
+      .getPublicUrl(`public/${file.name}`);
+
+    const logoUrl = publicUrlData?.publicUrl;
+
+    // 4. Save URL to DB
+    // const { error: dbError } = await supabase
+    //   .from("settings")
+    //   .update({ logo_url: logoUrl })
+    //   .eq("id", 1); // change according to your row logic
+
+    // if (dbError) {
+    //   console.error("DB update failed:", dbError.message);
+    // } else {
+    //   console.log("Logo updated!");
+    // }
+  };
+
+  const handleFaviconChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setFaviconPreview(reader.result);
+    };
+    reader.readAsDataURL(file);
+
+    const { data, error } = await supabase.storage
+      .from("logo") // your bucket
+      .upload(`public/${file.name}`, file, {
+        cacheControl: "3600",
+        upsert: true,
+      });
+
+    if (error) {
+      console.error("Upload error:", error.message);
+      return;
+    }
+
+    // Optionally get public URL
+    const { data: urlData } = supabase.storage
+      .from("logo")
+      .getPublicUrl(`public/${file.name}`);
+    console.log("Favicon uploaded at:", urlData.publicUrl);
+  };
+
+  if (loading_data) {
+    return <h1>Wait loading</h1>;
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Platform Settings</h1>
-          <p className="text-gray-600 mt-1">Configure system-wide settings and preferences</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Platform Settings
+          </h1>
+          <p className="text-gray-600 mt-1">
+            Configure system-wide settings and preferences
+          </p>
         </div>
-        <Button onClick={handleSaveSettings} className="bg-[#1C9B7A] hover:bg-[#158a69] mt-4 sm:mt-0">
+        <Button
+          // onClick={handleSaveSettings}
+          onClick={handleSubmit}
+          className="bg-[#1C9B7A] hover:bg-[#158a69] mt-4 sm:mt-0"
+        >
           Save All Changes
         </Button>
       </div>
@@ -171,49 +396,69 @@ export const SuperAdminSettings: React.FC = () => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Shield className="w-5 h-5 text-[#1C9B7A]" />
-              <CardTitle className="text-lg font-semibold text-gray-900">Security Settings</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Security Settings
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-medium text-gray-900">Two-Factor Authentication</Label>
-                <p className="text-sm text-gray-600">Enable 2FA for admin account</p>
+                <Label className="font-medium text-gray-900">
+                  Two-Factor Authentication
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Enable 2FA for admin account
+                </p>
               </div>
               <Switch
-                checked={settings.twoFactorEnabled}
-                onCheckedChange={(checked) => handleSettingChange('twoFactorEnabled', checked)}
+                checked={formData.two_factor_auth}
+                name="two_factor_auth"
+                // checked={settings.twoFactorEnabled}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("two_factor_auth", checked)
+                }
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
               <Input
-                id="sessionTimeout"
-                value={settings.sessionTimeout}
-                onChange={(e) => handleSettingChange('sessionTimeout', e.target.value)}
+                name="session_storage_time"
+                value={formData.session_storage_time}
+                onChange={handleChange}
                 type="number"
               />
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="apiRateLimit">API Rate Limit (requests/hour)</Label>
+              <Label htmlFor="apiRateLimit">
+                API Rate Limit (requests/hour)
+              </Label>
               <Input
                 id="apiRateLimit"
                 value={settings.apiRateLimit}
-                onChange={(e) => handleSettingChange('apiRateLimit', e.target.value)}
+                onChange={(e) =>
+                  handleSettingChange("apiRateLimit", e.target.value)
+                }
                 type="number"
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-medium text-gray-900">Require Email Verification</Label>
-                <p className="text-sm text-gray-600">New users must verify email</p>
+                <Label className="font-medium text-gray-900">
+                  Require Email Verification
+                </Label>
+                <p className="text-sm text-gray-600">
+                  New users must verify email
+                </p>
               </div>
               <Switch
-                checked={settings.requireEmailVerification}
-                onCheckedChange={(checked) => handleSettingChange('requireEmailVerification', checked)}
+                checked={formData.email_verification}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("email_verification", checked)
+                }
               />
             </div>
           </CardContent>
@@ -224,7 +469,9 @@ export const SuperAdminSettings: React.FC = () => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Globe className="w-5 h-5 text-[#1C9B7A]" />
-              <CardTitle className="text-lg font-semibold text-gray-900">Platform Configuration</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Platform Configuration
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
@@ -232,8 +479,9 @@ export const SuperAdminSettings: React.FC = () => {
               <Label htmlFor="platformName">Platform Name</Label>
               <Input
                 id="platformName"
-                value={settings.platformName}
-                onChange={(e) => handleSettingChange('platformName', e.target.value)}
+                name="platform_name"
+                value={formData.platform_name}
+                onChange={handleChange}
               />
             </div>
 
@@ -242,23 +490,33 @@ export const SuperAdminSettings: React.FC = () => {
               <Input
                 id="supportEmail"
                 type="email"
-                value={settings.supportEmail}
-                onChange={(e) => handleSettingChange('supportEmail', e.target.value)}
+                name="support_email"
+                value={formData.support_email}
+                onChange={handleChange}
               />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="defaultLanguage">Default Language</Label>
-              <Select value={settings.defaultLanguage} onValueChange={(value) => handleSettingChange('defaultLanguage', value)}>
+              <Select
+                value={formData.selected_language}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    selected_language: value,
+                  }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="it">Italian</SelectItem>
-                  <SelectItem value="en">English</SelectItem>
-                  <SelectItem value="fr">French</SelectItem>
-                  <SelectItem value="de">German</SelectItem>
-                  <SelectItem value="es">Spanish</SelectItem>
+                  {formData.languages &&
+                    formData.languages.map((lang) => (
+                      <SelectItem key={lang.code} value={lang.code}>
+                        {lang.name}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -268,8 +526,9 @@ export const SuperAdminSettings: React.FC = () => {
               <Input
                 id="maxUsers"
                 type="number"
-                value={settings.maxUsers}
-                onChange={(e) => handleSettingChange('maxUsers', e.target.value)}
+                name="maximun_users"
+                value={formData.maximun_users}
+                onChange={handleChange}
               />
             </div>
           </CardContent>
@@ -280,9 +539,17 @@ export const SuperAdminSettings: React.FC = () => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-[#1C9B7A]" />
-              <CardTitle className="text-lg font-semibold text-gray-900">Stripe Integration</CardTitle>
-              <div className={`ml-auto px-2 py-1 rounded-full text-xs ${stripeSettings.connected ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                {stripeSettings.connected ? 'Connected' : 'Not Connected'}
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Stripe Integration
+              </CardTitle>
+              <div
+                className={`ml-auto px-2 py-1 rounded-full text-xs ${
+                  stripeSettings.connected
+                    ? "bg-green-100 text-green-800"
+                    : "bg-red-100 text-red-800"
+                }`}
+              >
+                {stripeSettings.connected ? "Connected" : "Not Connected"}
               </div>
             </div>
           </CardHeader>
@@ -291,8 +558,9 @@ export const SuperAdminSettings: React.FC = () => {
               <Label htmlFor="stripePublishable">Stripe Publishable Key</Label>
               <Input
                 id="stripePublishable"
-                value={stripeSettings.publishableKey}
-                onChange={(e) => setStripeSettings(prev => ({ ...prev, publishableKey: e.target.value }))}
+                name="stripe_publish_key"
+                value={formData.stripe_publish_key}
+                onChange={handleChange}
                 placeholder="pk_test_..."
               />
             </div>
@@ -302,9 +570,11 @@ export const SuperAdminSettings: React.FC = () => {
               <div className="relative">
                 <Input
                   id="stripeSecret"
+                  name="stripe_secret_key"
                   type={showSecrets.stripeSecret ? "text" : "password"}
-                  value={stripeSettings.secretKey}
-                  onChange={(e) => setStripeSettings(prev => ({ ...prev, secretKey: e.target.value }))}
+                  // type={showSecrets.stripeSecret ? "text" : "password"}
+                  value={formData.stripe_secret_key}
+                  onChange={handleChange}
                   placeholder="sk_test_..."
                 />
                 <Button
@@ -312,9 +582,18 @@ export const SuperAdminSettings: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                  onClick={() => setShowSecrets(prev => ({ ...prev, stripeSecret: !prev.stripeSecret }))}
+                  onClick={() =>
+                    setShowSecrets((prev) => ({
+                      ...prev,
+                      stripeSecret: !prev.stripeSecret,
+                    }))
+                  }
                 >
-                  {showSecrets.stripeSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showSecrets.stripeSecret ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -324,9 +603,10 @@ export const SuperAdminSettings: React.FC = () => {
               <div className="relative">
                 <Input
                   id="webhookSecret"
+                  name="webhook_secret_key"
                   type={showSecrets.webhookSecret ? "text" : "password"}
-                  value={stripeSettings.webhookSecret}
-                  onChange={(e) => setStripeSettings(prev => ({ ...prev, webhookSecret: e.target.value }))}
+                  value={formData.webhook_secret_key}
+                  onChange={handleChange}
                   placeholder="whsec_..."
                 />
                 <Button
@@ -334,9 +614,18 @@ export const SuperAdminSettings: React.FC = () => {
                   variant="ghost"
                   size="sm"
                   className="absolute right-2 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
-                  onClick={() => setShowSecrets(prev => ({ ...prev, webhookSecret: !prev.webhookSecret }))}
+                  onClick={() =>
+                    setShowSecrets((prev) => ({
+                      ...prev,
+                      webhookSecret: !prev.webhookSecret,
+                    }))
+                  }
                 >
-                  {showSecrets.webhookSecret ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showSecrets.webhookSecret ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>
@@ -345,15 +634,22 @@ export const SuperAdminSettings: React.FC = () => {
               <Label htmlFor="webhookEndpoint">Webhook Endpoint</Label>
               <div className="flex gap-2">
                 <Input
+                  name="webhook_endpoint"
                   id="webhookEndpoint"
-                  value="https://api.novafarm.com/webhooks/stripe"
+                  onChange={handleChange}
+                  value={formData.webhook_endpoint}
                   readOnly
                   className="bg-gray-50"
                 />
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => copyToClipboard('https://api.novafarm.com/webhooks/stripe', 'Webhook endpoint')}
+                  onClick={() =>
+                    copyToClipboard(
+                      "https://api.novafarm.com/webhooks/stripe",
+                      "Webhook endpoint"
+                    )
+                  }
                 >
                   <Copy className="h-4 w-4" />
                 </Button>
@@ -363,20 +659,26 @@ export const SuperAdminSettings: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <Label className="font-medium text-gray-900">Live Mode</Label>
-                <p className="text-sm text-gray-600">Use production Stripe keys</p>
+                <p className="text-sm text-gray-600">
+                  Use production Stripe keys
+                </p>
               </div>
               <Switch
                 checked={stripeSettings.liveMode}
-                onCheckedChange={(checked) => setStripeSettings(prev => ({ ...prev, liveMode: checked }))}
+                onCheckedChange={(checked) =>
+                  setStripeSettings((prev) => ({ ...prev, liveMode: checked }))
+                }
               />
             </div>
 
-            <Button 
+            <Button
               onClick={handleStripeTest}
               disabled={loading.stripeTest}
               className="w-full"
             >
-              {loading.stripeTest && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+              {loading.stripeTest && (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Test Connection
             </Button>
           </CardContent>
@@ -387,21 +689,56 @@ export const SuperAdminSettings: React.FC = () => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <Mail className="w-5 h-5 text-[#1C9B7A]" />
-              <CardTitle className="text-lg font-semibold text-gray-900">Email Provider Integration</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Email Provider Integration
+              </CardTitle>
             </div>
           </CardHeader>
+
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="emailProvider">Email Service</Label>
-              <Select value={emailSettings.provider} onValueChange={(value) => setEmailSettings(prev => ({ ...prev, provider: value }))}>
+              {/* <Select
+                value={formData.selected_email_service_provider}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    selected_email_service_provider: value,
+                  }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="resend">Resend</SelectItem>
-                  <SelectItem value="mailgun">Mailgun</SelectItem>
-                  <SelectItem value="sendgrid">SendGrid</SelectItem>
-                  <SelectItem value="smtp">SMTP</SelectItem>
+                  {formData.email_service_provider &&
+                    formData.email_service_provider.map((provider) => {
+                      return (
+                        <SelectItem key={provider.code} value={provider.value}>
+                          {provider.name}
+                        </SelectItem>
+                      );
+                    })}
+                </SelectContent>
+              </Select> */}
+              <Select
+                value={formData.selected_email_service_provider}
+                onValueChange={(value) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    selected_email_service_provider: value,
+                  }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select provider" />
+                </SelectTrigger>
+                <SelectContent>
+                  {formData.email_service_provider.map((provider) => (
+                    <SelectItem key={provider.code} value={provider.code}>
+                      {provider.name}
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
@@ -411,8 +748,8 @@ export const SuperAdminSettings: React.FC = () => {
               <Input
                 id="emailApiKey"
                 type="password"
-                value={emailSettings.apiKey}
-                onChange={(e) => setEmailSettings(prev => ({ ...prev, apiKey: e.target.value }))}
+                value={formData.api_key}
+                onChange={handleChange}
                 placeholder="Enter API key or SMTP password"
               />
             </div>
@@ -421,18 +758,20 @@ export const SuperAdminSettings: React.FC = () => {
               <div className="space-y-2">
                 <Label htmlFor="fromName">From Name</Label>
                 <Input
+                  name="form_name"
                   id="fromName"
-                  value={emailSettings.fromName}
-                  onChange={(e) => setEmailSettings(prev => ({ ...prev, fromName: e.target.value }))}
+                  value={formData.form_name}
+                  onChange={handleChange}
                 />
               </div>
               <div className="space-y-2">
                 <Label htmlFor="fromEmail">From Email</Label>
                 <Input
+                  name="from_email"
                   id="fromEmail"
                   type="email"
-                  value={emailSettings.fromEmail}
-                  onChange={(e) => setEmailSettings(prev => ({ ...prev, fromEmail: e.target.value }))}
+                  value={formData.from_email}
+                  onChange={handleChange}
                 />
               </div>
             </div>
@@ -440,25 +779,36 @@ export const SuperAdminSettings: React.FC = () => {
             <div className="space-y-2">
               <Label htmlFor="replyTo">Reply-To Email</Label>
               <Input
+                name="reply_to_email"
                 id="replyTo"
                 type="email"
-                value={emailSettings.replyTo}
-                onChange={(e) => setEmailSettings(prev => ({ ...prev, replyTo: e.target.value }))}
+                value={formData.reply_to_email}
+                onChange={handleChange}
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-medium text-gray-900">Enable Transactional Emails</Label>
-                <p className="text-sm text-gray-600">Allow system to send automated emails</p>
+                <Label className="font-medium text-gray-900">
+                  Enable Transactional Emails
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Allow system to send automated emails
+                </p>
               </div>
               <Switch
-                checked={emailSettings.transactionalEnabled}
-                onCheckedChange={(checked) => setEmailSettings(prev => ({ ...prev, transactionalEnabled: checked }))}
+                checked={formData.auto_transactional_emails}
+                name="auto_transactional_emails"
+                onCheckedChange={(checked) =>
+                  handle_auto_transactional_emails(
+                    "auto_transactional_emails",
+                    checked
+                  )
+                }
               />
             </div>
 
-            <Button 
+            <Button
               onClick={() => setTestEmailModal(true)}
               variant="outline"
               className="w-full"
@@ -470,7 +820,7 @@ export const SuperAdminSettings: React.FC = () => {
         </Card>
 
         {/* Webhook Configuration */}
-        <Card className="bg-white border border-gray-200">
+        {/* <Card className="bg-white border border-gray-200">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Webhook className="w-5 h-5 text-[#1C9B7A]" />
@@ -480,7 +830,7 @@ export const SuperAdminSettings: React.FC = () => {
           <CardContent className="space-y-4">
             <div className="space-y-3">
               <Label className="text-sm font-medium text-gray-900">System Events</Label>
-              
+
               <div className="flex items-center justify-between">
                 <div>
                   <Label className="font-medium text-gray-900">New User Registered</Label>
@@ -488,9 +838,9 @@ export const SuperAdminSettings: React.FC = () => {
                 </div>
                 <Switch
                   checked={webhookSettings.events.userRegistered}
-                  onCheckedChange={(checked) => setWebhookSettings(prev => ({ 
-                    ...prev, 
-                    events: { ...prev.events, userRegistered: checked } 
+                  onCheckedChange={(checked) => setWebhookSettings(prev => ({
+                    ...prev,
+                    events: { ...prev.events, userRegistered: checked }
                   }))}
                 />
               </div>
@@ -502,9 +852,9 @@ export const SuperAdminSettings: React.FC = () => {
                 </div>
                 <Switch
                   checked={webhookSettings.events.paymentCompleted}
-                  onCheckedChange={(checked) => setWebhookSettings(prev => ({ 
-                    ...prev, 
-                    events: { ...prev.events, paymentCompleted: checked } 
+                  onCheckedChange={(checked) => setWebhookSettings(prev => ({
+                    ...prev,
+                    events: { ...prev.events, paymentCompleted: checked }
                   }))}
                 />
               </div>
@@ -516,9 +866,9 @@ export const SuperAdminSettings: React.FC = () => {
                 </div>
                 <Switch
                   checked={webhookSettings.events.subscriptionCancelled}
-                  onCheckedChange={(checked) => setWebhookSettings(prev => ({ 
-                    ...prev, 
-                    events: { ...prev.events, subscriptionCancelled: checked } 
+                  onCheckedChange={(checked) => setWebhookSettings(prev => ({
+                    ...prev,
+                    events: { ...prev.events, subscriptionCancelled: checked }
                   }))}
                 />
               </div>
@@ -530,9 +880,9 @@ export const SuperAdminSettings: React.FC = () => {
                 </div>
                 <Switch
                   checked={webhookSettings.events.ticketCreated}
-                  onCheckedChange={(checked) => setWebhookSettings(prev => ({ 
-                    ...prev, 
-                    events: { ...prev.events, ticketCreated: checked } 
+                  onCheckedChange={(checked) => setWebhookSettings(prev => ({
+                    ...prev,
+                    events: { ...prev.events, ticketCreated: checked }
                   }))}
                 />
               </div>
@@ -576,7 +926,7 @@ export const SuperAdminSettings: React.FC = () => {
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={() => setRegenerateWebhookModal(true)}
               variant="outline"
               className="w-full"
@@ -585,10 +935,10 @@ export const SuperAdminSettings: React.FC = () => {
               Regenerate Webhook Secret
             </Button>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* API Access & Keys */}
-        <Card className="bg-white border border-gray-200">
+        {/* <Card className="bg-white border border-gray-200">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Key className="w-5 h-5 text-[#1C9B7A]" />
@@ -623,7 +973,7 @@ export const SuperAdminSettings: React.FC = () => {
               </div>
             </div>
 
-            <Button 
+            <Button
               onClick={() => setRegenerateApiKeyModal(true)}
               variant="outline"
               className="w-full"
@@ -676,54 +1026,77 @@ export const SuperAdminSettings: React.FC = () => {
               />
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         {/* Notification Settings */}
         <Card className="bg-white border border-gray-200">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Bell className="w-5 h-5 text-[#1C9B7A]" />
-              <CardTitle className="text-lg font-semibold text-gray-900">Notification Settings</CardTitle>
+              <CardTitle className="text-lg font-semibold text-gray-900">
+                Notification Settings
+              </CardTitle>
             </div>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-medium text-gray-900">Email Notifications</Label>
-                <p className="text-sm text-gray-600">Receive admin notifications via email</p>
+                <Label className="font-medium text-gray-900">
+                  Email Notifications
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Receive admin notifications via email
+                </p>
               </div>
               <Switch
-                checked={settings.emailNotifications}
-                onCheckedChange={(checked) => handleSettingChange('emailNotifications', checked)}
+                name="email_notifications"
+                checked={formData.email_notifications}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("email_notifications", checked)
+                }
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-medium text-gray-900">SMS Notifications</Label>
-                <p className="text-sm text-gray-600">Receive critical alerts via SMS</p>
+                <Label className="font-medium text-gray-900">
+                  SMS Notifications
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Receive critical alerts via SMS
+                </p>
               </div>
               <Switch
-                checked={settings.smsNotifications}
-                onCheckedChange={(checked) => handleSettingChange('smsNotifications', checked)}
+                name="sms_notifications"
+                checked={formData.sms_notifications}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("sms_notifications", checked)
+                }
               />
             </div>
 
             <div className="flex items-center justify-between">
               <div>
-                <Label className="font-medium text-gray-900">Allow User Registration</Label>
-                <p className="text-sm text-gray-600">Enable public registration</p>
+                <Label className="font-medium text-gray-900">
+                  Allow User Registration
+                </Label>
+                <p className="text-sm text-gray-600">
+                  Enable public registration
+                </p>
               </div>
               <Switch
-                checked={settings.allowRegistration}
-                onCheckedChange={(checked) => handleSettingChange('allowRegistration', checked)}
+                name="allow_user_registration"
+                checked={formData.allow_user_registration}
+                onCheckedChange={(checked) =>
+                  handleSettingChange("allow_user_registration", checked)
+                }
               />
             </div>
           </CardContent>
         </Card>
 
         {/* System Settings */}
-        <Card className="bg-white border border-gray-200">
+        {/* <Card className="bg-white border border-gray-200">
           <CardHeader>
             <div className="flex items-center gap-2">
               <Database className="w-5 h-5 text-[#1C9B7A]" />
@@ -767,7 +1140,7 @@ export const SuperAdminSettings: React.FC = () => {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
       </div>
 
       {/* Branding Settings */}
@@ -775,60 +1148,70 @@ export const SuperAdminSettings: React.FC = () => {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Palette className="w-5 h-5 text-[#1C9B7A]" />
-            <CardTitle className="text-lg font-semibold text-gray-900">Platform Branding</CardTitle>
+            <CardTitle className="text-lg font-semibold text-gray-900">
+              Platform Branding
+            </CardTitle>
           </div>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-2">
               <Label htmlFor="logoUrl">Logo URL</Label>
-              <Input
-                id="logoUrl"
-                placeholder="https://example.com/logo.png"
-              />
+              <div>
+                <Input
+                  id="logoUpload"
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                />
+                {preview && (
+                  <img
+                    src={preview}
+                    alt="Preview"
+                    className="mt-2 max-h-20 rounded"
+                  />
+                )}
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="faviconUrl">Favicon URL</Label>
               <Input
                 id="faviconUrl"
-                placeholder="https://example.com/favicon.ico"
+                type="file"
+                accept="image/*"
+                onChange={handleFaviconChange}
               />
+              {faviconPreview && (
+                <img
+                  src={faviconPreview}
+                  alt="Favicon Preview"
+                  className="mt-2 max-h-20 rounded"
+                />
+              )}
             </div>
           </div>
 
-          <div className="space-y-2">
+          {/* <div className="space-y-2">
             <Label htmlFor="welcomeMessage">Welcome Message</Label>
             <Textarea
               id="welcomeMessage"
               placeholder="Welcome to NovaFarm - Your complete pharmacy management solution"
               rows={3}
             />
-          </div>
+          </div> */}
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="space-y-2">
               <Label htmlFor="primaryColor">Primary Color</Label>
-              <Input
-                id="primaryColor"
-                type="color"
-                defaultValue="#1C9B7A"
-              />
+              <Input id="primaryColor" type="color" defaultValue="#1C9B7A" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="secondaryColor">Secondary Color</Label>
-              <Input
-                id="secondaryColor"
-                type="color"
-                defaultValue="#F3EEE9"
-              />
+              <Input id="secondaryColor" type="color" defaultValue="#F3EEE9" />
             </div>
             <div className="space-y-2">
               <Label htmlFor="accentColor">Accent Color</Label>
-              <Input
-                id="accentColor"
-                type="color"
-                defaultValue="#8E8E93"
-              />
+              <Input id="accentColor" type="color" defaultValue="#8E8E93" />
             </div>
           </div>
         </CardContent>
@@ -847,7 +1230,9 @@ export const SuperAdminSettings: React.FC = () => {
                 id="testEmailTo"
                 type="email"
                 value={testEmailData.to}
-                onChange={(e) => setTestEmailData(prev => ({ ...prev, to: e.target.value }))}
+                onChange={(e) =>
+                  setTestEmailData((prev) => ({ ...prev, to: e.target.value }))
+                }
                 placeholder="test@example.com"
               />
             </div>
@@ -856,7 +1241,12 @@ export const SuperAdminSettings: React.FC = () => {
               <Input
                 id="testEmailSubject"
                 value={testEmailData.subject}
-                onChange={(e) => setTestEmailData(prev => ({ ...prev, subject: e.target.value }))}
+                onChange={(e) =>
+                  setTestEmailData((prev) => ({
+                    ...prev,
+                    subject: e.target.value,
+                  }))
+                }
                 placeholder="Test Email from NovaFarm"
               />
             </div>
@@ -865,7 +1255,12 @@ export const SuperAdminSettings: React.FC = () => {
               <Textarea
                 id="testEmailMessage"
                 value={testEmailData.message}
-                onChange={(e) => setTestEmailData(prev => ({ ...prev, message: e.target.value }))}
+                onChange={(e) =>
+                  setTestEmailData((prev) => ({
+                    ...prev,
+                    message: e.target.value,
+                  }))
+                }
                 placeholder="This is a test email to verify the email configuration."
                 rows={3}
               />
@@ -875,12 +1270,14 @@ export const SuperAdminSettings: React.FC = () => {
             <Button variant="outline" onClick={() => setTestEmailModal(false)}>
               Cancel
             </Button>
-            <Button 
+            <Button
               onClick={handleSendTestEmail}
               disabled={loading.emailTest || !testEmailData.to}
               className="bg-[#1C9B7A] hover:bg-[#158a69]"
             >
-              {loading.emailTest && <RefreshCw className="mr-2 h-4 w-4 animate-spin" />}
+              {loading.emailTest && (
+                <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+              )}
               Send Test Email
             </Button>
           </DialogFooter>
@@ -888,21 +1285,32 @@ export const SuperAdminSettings: React.FC = () => {
       </Dialog>
 
       {/* Regenerate Webhook Secret Modal */}
-      <Dialog open={regenerateWebhookModal} onOpenChange={setRegenerateWebhookModal}>
+      <Dialog
+        open={regenerateWebhookModal}
+        onOpenChange={setRegenerateWebhookModal}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Regenerate Webhook Secret</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to regenerate the webhook secret? This will invalidate the current secret and you'll need to update your webhook configuration.
+              Are you sure you want to regenerate the webhook secret? This will
+              invalidate the current secret and you'll need to update your
+              webhook configuration.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRegenerateWebhookModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setRegenerateWebhookModal(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleRegenerateWebhook} className="bg-[#1C9B7A] hover:bg-[#158a69]">
+            <Button
+              onClick={handleRegenerateWebhook}
+              className="bg-[#1C9B7A] hover:bg-[#158a69]"
+            >
               Regenerate Secret
             </Button>
           </DialogFooter>
@@ -910,21 +1318,32 @@ export const SuperAdminSettings: React.FC = () => {
       </Dialog>
 
       {/* Regenerate API Key Modal */}
-      <Dialog open={regenerateApiKeyModal} onOpenChange={setRegenerateApiKeyModal}>
+      <Dialog
+        open={regenerateApiKeyModal}
+        onOpenChange={setRegenerateApiKeyModal}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Regenerate API Key</DialogTitle>
           </DialogHeader>
           <div className="py-4">
             <p className="text-sm text-gray-600">
-              Are you sure you want to regenerate the admin API key? This will invalidate the current key and any applications using it will need to be updated.
+              Are you sure you want to regenerate the admin API key? This will
+              invalidate the current key and any applications using it will need
+              to be updated.
             </p>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setRegenerateApiKeyModal(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setRegenerateApiKeyModal(false)}
+            >
               Cancel
             </Button>
-            <Button onClick={handleRegenerateApiKey} className="bg-[#1C9B7A] hover:bg-[#158a69]">
+            <Button
+              onClick={handleRegenerateApiKey}
+              className="bg-[#1C9B7A] hover:bg-[#158a69]"
+            >
               Regenerate Key
             </Button>
           </DialogFooter>

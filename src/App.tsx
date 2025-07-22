@@ -24,6 +24,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import PublicOnlyRoute from "./components/PublicRoute";
 import AdminPublicRoute from "./components/AdminPublicRoute";
 import AdminProtectRoute from "./components/AdminProtectedRoute";
+import { SubscriptionPlan } from "./pages/SubscriptionPlan";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,8 @@ const AppContent = () => {
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/verify-2fa" element={<TwoFactorVerification />} />
         <Route path="/payment" element={<Payment />} />
+        <Route path="/create-new-plan" element={<SubscriptionPlan />} />
+
         <Route path="/landing" element={<Landing />} />
         <Route path="*" element={<NotFound />} />
       </Routes>

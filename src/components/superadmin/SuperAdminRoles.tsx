@@ -41,6 +41,8 @@ import {
 import { Checkbox } from "@/components/ui/checkbox";
 import { ConfirmActionModal } from "./ConfirmActionModal";
 import { supabase } from "@/integrations/supabase/client";
+import { permission } from "process";
+import { toast } from "sonner";
 
 interface AdminUser {
   id: string;
@@ -120,6 +122,12 @@ export const SuperAdminRoles: React.FC = () => {
   const [all_users, set_all_users] = useState([]);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [isManagePermissionsOpen, setIsManagePermissionsOpen] = useState(false);
+
+  const [selectedRole_main, setSelectedRole_main] = useState({
+    name: "",
+    permission: [],
+  });
+
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
   const [confirmAction, setConfirmAction] = useState<{
     isOpen: boolean;
@@ -136,6 +144,47 @@ export const SuperAdminRoles: React.FC = () => {
     password: "",
   });
 
+  const permissionColumnMap: { [key: string]: string } = {
+    users: "user-management",
+    payments: "payment-processing",
+    settings: "system-settings",
+    analytics: "analytics-reports",
+    billing: "billing-invoices",
+  };
+
+  const fetchPermissionsForRoles = async () => {
+    const updatedRoles = await Promise.all(
+      mockRoles.map(async (role) => {
+        const { data, error } = await supabase
+          .from("permissions")
+          .select("*")
+          .eq("role", role.name)
+          .single();
+
+        if (error || !data) {
+          console.warn(`No permissions found for role: ${role.name}`);
+          return role;
+        }
+
+        const selectedPermissions: string[] = [];
+
+        for (const [key, value] of Object.entries(data)) {
+          const match = Object.entries(permissionColumnMap).find(
+            ([permKey, column]) => column === key && value === true
+          );
+          if (match) selectedPermissions.push(match[0]);
+        }
+
+        return {
+          ...role,
+          permissions: selectedPermissions,
+        };
+      })
+    );
+
+    setRoles(updatedRoles);
+  };
+
   const fetchUsers = async () => {
     const { data, error } = await supabase.from("team_mate").select("*");
 
@@ -150,84 +199,37 @@ export const SuperAdminRoles: React.FC = () => {
 
   useEffect(() => {
     fetchUsers();
+    fetchPermissionsForRoles();
   }, []);
 
   console.log("Fetched users from state:", all_users);
 
-  const handle_DeleteUser = async (id) => {
-    const { data, error } = await supabase
-      .from("team_mate")
-      .delete()
-      .eq("id", id);
+  const handleDeleteUser_main = async (userId: string) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    const accessToken = session?.access_token;
 
-    if (error) {
-      console.error("Error fetching users:", error.message);
-      return [];
+    const res = await fetch(
+      "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/delete-teamate",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${accessToken}`,
+        },
+        body: JSON.stringify({ user_id: userId }),
+      }
+    );
+    if (!res.ok) {
+      const err = await res.json();
+      console.error("Delete failed:", err);
+      alert("Failed to delete user");
+    } else {
+      toast.success("User deleted!");
+      // alert("User deleted!");
     }
-
-    console.log("Fetched users:", data);
-    return data;
   };
-
-  // const handleAddUser = async (e) => {
-  //   e.preventDefault();
-
-  //   const { firstName, lastName, email, role, password } = newUser;
-  //   const fullName = `${firstName.trim()} ${lastName.trim()}`;
-
-  //   try {
-  //     // Get current session (assumes super admin is logged in)
-  //     const {
-  //       data: { session },
-  //       error: sessionError,
-  //     } = await supabase.auth.getSession();
-
-  //     if (sessionError || !session?.access_token) {
-  //       console.error("No valid session found.");
-  //       alert("Unauthorized: Please log in as Super Admin.");
-  //       return;
-  //     }
-
-  //     const res = await fetch(
-  //       "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/add-user-with-role",
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${session.access_token}`,
-  //         },
-  //         body: JSON.stringify({
-  //           email,
-  //           password,
-  //           name: fullName,
-  //           role,
-  //         }),
-  //       }
-  //     );
-
-  //     const result = await res.json();
-
-  //     if (res.ok) {
-  //       alert("User created!");
-  //       setUsers((prev) => [...prev, { name: fullName, email, role }]);
-  //       setNewUser({
-  //         firstName: "",
-  //         lastName: "",
-  //         email: "",
-  //         role: "",
-  //         password: "",
-  //       });
-  //       setIsAddUserOpen(false);
-  //     } else {
-  //       const errorMessage = result?.error?.message || "Unknown error occurred";
-  //       console.error("Error:", errorMessage);
-  //       alert("Failed to create user: " + errorMessage);
-  //     }
-  //   } catch (err) {
-  //     console.error("Network or server error:", err);
-  //     alert("Failed to create user: Network or server error.");
-  //   }
-  // };
 
   const handleAddUser = async (e) => {
     e.preventDefault();
@@ -236,7 +238,6 @@ export const SuperAdminRoles: React.FC = () => {
     const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
     try {
-      // Get current session (assumes super admin is logged in)
       const {
         data: { session },
         error: sessionError,
@@ -269,7 +270,8 @@ export const SuperAdminRoles: React.FC = () => {
       const result = await res.json();
 
       if (res.ok) {
-        alert("User created!");
+        toast.success("User created!");
+        // alert("User created!");
         setUsers((prev) => [...prev, { name: fullName, email, role }]);
         setNewUser({
           firstName: "",
@@ -286,7 +288,8 @@ export const SuperAdminRoles: React.FC = () => {
             : result?.error?.message || "Unknown error occurred";
 
         console.error("Error:", errorMessage);
-        alert("Failed to create user: " + errorMessage);
+        toast.success("Failed to create user");
+        // alert("Failed to create user: " + errorMessage);
       }
     } catch (err) {
       console.error("Network or server error:", err);
@@ -294,28 +297,28 @@ export const SuperAdminRoles: React.FC = () => {
     }
   };
 
-  const handleAddUser_main = async () => {
-    const res = await fetch(
-      "https://your-project-id.supabase.co/functions/v1/add-user",
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: "support@example.com",
-          password: "12345678",
-          role: "support",
-          active: true, // or false
-          name: "Support Staff",
-          phone: "1234567890", // example of another custom field
-        }),
-      }
-    );
+  // const handleAddUser_main = async () => {
+  //   const res = await fetch(
+  //     "https://your-project-id.supabase.co/functions/v1/add-user",
+  //     {
+  //       method: "POST",
+  //       headers: {
+  //         "Content-Type": "application/json",
+  //       },
+  //       body: JSON.stringify({
+  //         email: "support@example.com",
+  //         password: "12345678",
+  //         role: "support",
+  //         active: true, // or false
+  //         name: "Support Staff",
+  //         phone: "1234567890", // example of another custom field
+  //       }),
+  //     }
+  //   );
 
-    const data = await res.json();
-    console.log(data);
-  };
+  //   const data = await res.json();
+  //   console.log(data);
+  // };
 
   const handleSuspendUser = (userId: string) => {
     setUsers(
@@ -337,9 +340,89 @@ export const SuperAdminRoles: React.FC = () => {
     setUsers(users.filter((user) => user.id !== userId));
   };
 
-  const handleManagePermissions = (role: Role) => {
-    setSelectedRole(role);
-    setIsManagePermissionsOpen(true);
+  // const handleManagePermissions = (role: Role) => {
+  //   setSelectedRole(role);
+  //   setIsManagePermissionsOpen(true);
+  // };
+
+  const handleManagePermissions = async (role: Role) => {
+    try {
+      const { data, error } = await supabase
+        .from("permissions")
+        .select("*")
+        .eq("role", role.name)
+        .single();
+
+      if (error) {
+        console.error("Error fetching permissions:", error.message);
+      }
+      const selectedPermissions: string[] = [];
+      if (data) {
+        for (const [key, value] of Object.entries(data)) {
+          const match = Object.entries(permissionColumnMap).find(
+            ([permKey, column]) => column === key && value === true
+          );
+          if (match) selectedPermissions.push(match[0]);
+        }
+      }
+      setSelectedRole({
+        ...role,
+        permissions: selectedPermissions,
+      });
+
+      setIsManagePermissionsOpen(true);
+    } catch (err) {
+      console.error("Unexpected error fetching permissions:", err);
+    }
+  };
+
+  const handlePermissionToggle_main = (permissionId) => {
+    setSelectedRole((prev) => {
+      const hasPermission = prev.permissions.includes(permissionId);
+      return {
+        ...prev,
+        permissions: hasPermission
+          ? prev.permissions.filter((id) => id !== permissionId)
+          : [...prev.permissions, permissionId],
+      };
+    });
+  };
+
+  const handleSave_permissions = async () => {
+    if (!selectedRole) return;
+
+    const payload: { [key: string]: boolean | string } = {
+      role: selectedRole.name,
+    };
+
+    // First set all permission columns to false
+    allPermissions.forEach(({ id }) => {
+      const column = permissionColumnMap[id];
+      if (column) {
+        payload[column] = false;
+      }
+    });
+
+    // Now override with true for selected permissions
+    selectedRole.permissions.forEach((perm) => {
+      const column = permissionColumnMap[perm];
+      if (column) {
+        payload[column] = true;
+      }
+    });
+
+    const { error } = await supabase
+      .from("permissions")
+      .upsert([payload], { onConflict: "role" });
+
+    if (error) {
+      console.error(" Error saving permissions:", error.message);
+      alert("Error saving permissions. Please try again.");
+    } else {
+      console.log("Permissions saved to Supabase:", payload);
+      toast.success("Permissions saved successfully!");
+      setIsManagePermissionsOpen(false);
+    }
   };
 
   const handlePermissionToggle = (permissionId: string) => {
@@ -348,6 +431,9 @@ export const SuperAdminRoles: React.FC = () => {
     const updatedPermissions = selectedRole.permissions.includes(permissionId)
       ? selectedRole.permissions.filter((p) => p !== permissionId)
       : [...selectedRole.permissions, permissionId];
+
+    console.log("Selected Permissions:", updatedPermissions); // 👈 Log here
+    console.log("Selected role:", selectedRole.name); // 👈 Log here
 
     setSelectedRole({ ...selectedRole, permissions: updatedPermissions });
     setRoles(
@@ -551,22 +637,33 @@ export const SuperAdminRoles: React.FC = () => {
                             <Button variant="ghost" size="sm">
                               <Edit className="w-4 h-4" />
                             </Button>
+                            {/* <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() =>
+                                setConfirmAction({
+                                  isOpen: true,
+                                  action: () => handleDeleteUser_main(user.id),
+                                  title: "Delete Team Member",
+                                  message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
+                                })
+                              }
+                            >
+                              <Trash2 className="w-4 h-4 text-red-600" />
+                            </Button> */}
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() =>
                                 setConfirmAction({
                                   isOpen: true,
-                                  action: () => handleDeleteUser(user.id),
+                                  action: () => handleDeleteUser_main(user.id),
                                   title: "Delete Team Member",
                                   message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
                                 })
                               }
                             >
-                              <Trash2
-                                className="w-4 h-4 text-red-600"
-                                onClick={() => handle_DeleteUser(user.id)}
-                              />
+                              <Trash2 className="w-4 h-4 text-red-600" />
                             </Button>
                           </div>
                         </TableCell>
@@ -649,7 +746,7 @@ export const SuperAdminRoles: React.FC = () => {
               </div>
             ))}
             <Button
-              onClick={() => setIsManagePermissionsOpen(false)}
+              onClick={handleSave_permissions}
               className="w-full bg-[#27AE60] hover:bg-[#1e8449]"
             >
               Save Changes
@@ -657,6 +754,38 @@ export const SuperAdminRoles: React.FC = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* <Dialog
+        open={isManagePermissionsOpen}
+        onOpenChange={setIsManagePermissionsOpen}
+      >
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Manage Permissions - {selectedRole?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            {allPermissions.map((permission) => (
+              <div key={permission.id} className="flex items-center space-x-3">
+                <Checkbox
+                  id={permission.id}
+                  checked={selectedRole?.permissions.includes(permission.id)}
+                  onCheckedChange={() => handlePermissionToggle(permission.id)}
+                />
+                <div className="flex items-center space-x-2">
+                  <permission.icon className="w-4 h-4 text-gray-600" />
+                  <Label htmlFor={permission.id}>{permission.label}</Label>
+                </div>
+              </div>
+            ))}
+            <Button
+              onClick={() => setIsManagePermissionsOpen(false)}
+              className="w-full bg-[#27AE60] hover:bg-[#1e8449]"
+            >
+              Save Changes
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog> */}
 
       {/* Confirmation Modal */}
       {confirmAction && (

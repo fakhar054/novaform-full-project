@@ -48,9 +48,19 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
       label: "Activity Logs",
       icon: Activity,
     },
+    {
+      id: "subscrption_plan" as SuperAdminSection,
+      label: "Subscription Plan",
+      icon: Activity,
+    },
     { id: "email" as SuperAdminSection, label: "Email", icon: Mail },
     { id: "roles" as SuperAdminSection, label: "User Roles", icon: Shield },
     { id: "settings" as SuperAdminSection, label: "Settings", icon: Settings },
+    {
+      id: "viewPlans" as SuperAdminSection,
+      label: "View Plans",
+      icon: Settings,
+    },
     // { id: "logout" as SuperAdminSection, label: "LogOut", icon: ArrowRight },
   ];
 

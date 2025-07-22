@@ -87,7 +87,7 @@ export const AccountSettings: React.FC = () => {
     const { data, error } = await (supabase as any)
       .from("users")
       .select("*")
-      .eq("uuid", user.id)
+      .eq("email", user.email)
       .single();
 
     if (error) {
@@ -196,7 +196,7 @@ export const AccountSettings: React.FC = () => {
         phone: data.phone,
         language: data.language,
       })
-      .eq("uuid", user.id);
+      .eq("email", user.email);
 
     if (error) {
       console.error("Update failed:", error.message);
@@ -211,7 +211,6 @@ export const AccountSettings: React.FC = () => {
     }
 
     setLoadingPersonal(false);
-
     // Optional: clear success message after 3s
     setTimeout(() => setMessage(null), 3000);
   };
@@ -240,7 +239,7 @@ export const AccountSettings: React.FC = () => {
         companyName: data.companyName,
         vatNumber: data.vatNumber,
       })
-      .eq("uuid", user.id);
+      .eq("email", user.email);
 
     if (error) {
       console.error("Update failed in company", error.message);
