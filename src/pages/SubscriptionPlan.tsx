@@ -33,33 +33,13 @@ const SubscriptionPlan = ({ planId }) => {
     console.log("No auth token found in localStorage.");
   }
 
-  // useEffect(() => {
-  //   if (planId) {
-  //     const fetchPlan = async () => {
-  //       const { data, error } = await supabase
-  //         .from("subscription_plan")
-  //         .select("*")
-  //         .single();
-
-  //       if (error) {
-  //         console.error("Fetch error", error);
-  //         toast.error("Failed to load subscription plan.");
-  //       } else {
-  //         setFormData(data);
-  //       }
-  //       setLoading(false);
-  //     };
-  //     fetchPlan();
-  //   }
-  // }, []);
-
   useEffect(() => {
     if (planId) {
       const fetchPlan = async () => {
         const { data, error } = await supabase
           .from("subscription_plan")
           .select("*")
-          .eq("id", planId) 
+          .eq("id", planId)
           .single();
 
         if (error) {
@@ -115,8 +95,8 @@ const SubscriptionPlan = ({ planId }) => {
             monthly_plan_name: formData.monthly_plan_name.trim(),
             yearly_plan_name: formData.yearly_plan_name.trim(),
             plan_description: formData.plan_description.trim(),
-            price_monthly: monthly, // now float, e.g., 19.99
-            price_yearly: yearly, // now float, e.g., 199.99
+            price_monthly: monthly,
+            price_yearly: yearly,
           }),
         }
       );
@@ -133,64 +113,6 @@ const SubscriptionPlan = ({ planId }) => {
       toast.error("Something went wrong. Please try again.");
     }
   };
-
-  //this function converts into cents and then sends
-  // const handleSubmit = async (e) => {
-  //   e.preventDefault();
-
-  //   const monthlyStr = formData.price_monthly.trim();
-  //   const yearlyStr = formData.price_yearly.trim();
-
-  //   if (!monthlyStr || !yearlyStr) {
-  //     toast.error("Both monthly and yearly prices are required.");
-  //     return;
-  //   }
-
-  //   const monthly = parseFloat(monthlyStr);
-  //   const yearly = parseFloat(yearlyStr);
-
-  //   if (isNaN(monthly) || isNaN(yearly)) {
-  //     toast.error("Invalid price entered. Please enter valid numbers.");
-  //     return;
-  //   }
-
-  //   // Convert to cents (integers)
-  //   const priceMonthlyCents = Math.round(monthly * 100);
-  //   const priceYearlyCents = Math.round(yearly * 100);
-
-  //   try {
-  //     const response = await fetch(
-  //       "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/create-plans",
-  //       {
-  //         method: "POST",
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
-  //         },
-  //         body: JSON.stringify({
-  //           monthly_plan_name: formData.monthly_plan_name.trim(),
-  //           yearly_plan_name: formData.yearly_plan_name.trim(),
-  //           plan_description: formData.plan_description.trim(),
-  //           price_monthly: priceMonthlyCents, // converted to cents
-  //           price_yearly: priceYearlyCents, // converted to cents
-  //         }),
-  //       }
-  //     );
-
-  //     const data = await response.json();
-
-  //     if (response.ok && data.success) {
-  //       toast.success("Plan created and updated successfully.");
-  //     } else {
-  //       toast.error(`Failed to create plan: ${data.error || "Unknown error"}`);
-  //     }
-  //   } catch (error) {
-  //     console.error("Error creating plan:", error);
-  //     toast.error("Something went wrong. Please try again.");
-  //   }
-  // };
-
-  // if (loading) return <p className="text-center mt-10">Loading...</p>;
 
   return (
     <div className="max-w-2xl mx-auto p-6 bg-white shadow-lg rounded-lg">
