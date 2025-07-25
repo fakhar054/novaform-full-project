@@ -81,7 +81,7 @@ export const SuperAdminAccounts: React.FC = () => {
 
     // Step 2: Insert profile info into Supabase 'users' table
     const { error: dbError } = await supabaseAdmin.from("users").insert({
-      uuid: userId,
+      // uuid: userId,
       businessName: formData.businessName,
       contactPerson: formData.contactPerson,
       phone: formData.phone,

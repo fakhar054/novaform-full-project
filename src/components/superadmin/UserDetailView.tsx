@@ -33,10 +33,12 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
+import { toast } from "sonner";
 import { ConfirmActionModal } from "./ConfirmActionModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { ChangePlanModal } from "./ChangePlanModal";
+import { supabase } from "@/integrations/supabase/client";
 
 interface UserDetailViewProps {
   user: any;
@@ -67,6 +69,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   });
 
   console.log("User detail ", formData);
+
   const [showConfirmModal, setShowConfirmModal] = useState<{
     isOpen: boolean;
     type:
@@ -89,14 +92,35 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   });
   const [showResetPasswordModal, setShowResetPasswordModal] = useState(false);
   const [showChangePlanModal, setShowChangePlanModal] = useState(false);
-  const { toast } = useToast();
 
-  const handleSave = (section: string) => {
-    toast({
-      title: "Changes Saved",
-      description: `${section} information has been updated successfully.`,
-    });
-    setEditingSection(null);
+  // const handleSave = (section: string) => {
+  //   setEditingSection(null);
+  // };
+
+  const handleSave = async (section: string) => {
+    try {
+      const { error } = await supabase
+        .from("users")
+        .update({
+          businessName: formData.businessName,
+          email: formData.email,
+          phone: formData.phone,
+          language: formData.language,
+          streetAddress: formData.address,
+        })
+        .eq("id", user.id);
+
+      if (error) {
+        console.error("Error updating user:", error.message);
+        toast.error("Error updating user");
+      } else {
+        toast.success("Changes saved successfully!");
+        setEditingSection(null);
+      }
+    } catch (err) {
+      console.error("Unexpected error:", err);
+      toast.error("Something went wrong");
+    }
   };
 
   const handleCancel = () => {
