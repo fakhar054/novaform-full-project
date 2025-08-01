@@ -12,8 +12,10 @@ import {
   Shield,
   Mail,
   ArrowRight,
+  Package,
 } from "lucide-react";
 import { SuperAdminSection } from "@/pages/SuperAdmin";
+import { SuperAdminSubscriptionPlans } from "./SuperAdminSubscriptionPlans";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import "../../App.css";
@@ -51,17 +53,11 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
     {
       id: "subscrption_plan" as SuperAdminSection,
       label: "Subscription Plan",
-      icon: Activity,
+      icon: Package,
     },
     { id: "email" as SuperAdminSection, label: "Email", icon: Mail },
     { id: "roles" as SuperAdminSection, label: "User Roles", icon: Shield },
     { id: "settings" as SuperAdminSection, label: "Settings", icon: Settings },
-    {
-      id: "viewPlans" as SuperAdminSection,
-      label: "View Plans",
-      icon: Settings,
-    },
-    // { id: "logout" as SuperAdminSection, label: "LogOut", icon: ArrowRight },
   ];
 
   const handleLogout = () => {
@@ -107,7 +103,7 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
         lg:translate-x-0 
       `}
       >
-        <div className="p-6 border-b border-gray-700">
+        <div className="p-6 border-b border-gray-700 text-left">
           <h1 className="text-xl font-bold text-[#1C9B7A]">NovaFarm</h1>
           <p className="text-sm text-gray-400 mt-1">Super Admin</p>
         </div>

@@ -19,6 +19,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+// import { useSession } from "@supabase/auth-helpers-react";
 
 interface ChangePlanModalProps {
   user: any;
@@ -35,39 +37,30 @@ export const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
 }) => {
   const [selectedPlan, setSelectedPlan] = useState(user.plan);
   const [latestPlan, setLatestPlan] = useState(user.plan);
+  const [billingCycle, setBillingCycle] = useState<"monthly" | "yearly">(
+    "monthly"
+  );
+  const [AllPlans, setAllPlans] = useState([]);
 
-  const plans = [
-    {
-      value: "Basic",
-      label: "Basic Plan",
-      price: "€29/month",
-      features: ["Up to 100 products", "Basic support"],
-    },
-    {
-      value: "Standard",
-      label: "Standard Plan",
-      price: "€59/month",
-      features: [
-        "Up to 500 products",
-        "Priority support",
-        "Advanced analytics",
-      ],
-    },
-    {
-      value: "Premium",
-      label: "Premium Plan",
-      price: "€89/month",
-      features: ["Unlimited products", "24/7 support", "Custom integrations"],
-    },
-  ];
+  const userId = user.id;
+
+  const fetchSubscriptionPlans = async () => {
+    const { data, error } = await supabase
+      .from("subscription_plan")
+      .select("*");
+    if (error) {
+      console.error("Error fetching subscription plans:", error.message);
+      return;
+    }
+    setAllPlans(data || []);
+  };
 
   const fetchLatestPlan = async () => {
     const { data, error } = await supabase
       .from("users")
       .select("plan")
-      .eq("uuid", user.uuid)
+      .eq("uuid", user.id)
       .single();
-
     if (!error && data?.plan) {
       setLatestPlan(data.plan);
       setSelectedPlan(data.plan);
@@ -75,29 +68,66 @@ export const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
   };
 
   useEffect(() => {
+    fetchSubscriptionPlans();
     if (user?.uuid) {
       fetchLatestPlan();
     }
   }, [user]);
 
+  console.log("ALl plans", AllPlans);
+
   const handleSave = async () => {
-    const { error } = await supabase
-      .from("users")
-      .update({ plan: selectedPlan })
-      .eq("uuid", user.uuid);
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
 
     if (error) {
-      toast.error("Update failed: Could not change plan");
-      return;
+      console.log("Error getting session:", error.message);
+      return null;
     }
+    console.log("Access token is:", session?.access_token);
+    console.log("user ID is:", userId);
 
-    toast.success("Plan changed successfully");
-    onPlanChange?.(selectedPlan);
-    onClose();
+    const billingCycleValue = billingCycle === "yearly" ? 1 : 0;
+    const newStripePriceId =
+      billingCycle === 1
+        ? AllPlans.monthly_product_id
+        : AllPlans.monthly_product_id;
+    const payload = {
+      user_id: userId,
+      plan_id: selectedPlan,
+      billing_cycle: billingCycleValue,
+      newStripePriceId,
+    };
+
+    try {
+      const res = await fetch(
+        "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/update-plan",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      const result = await res.json();
+      if (res.ok) {
+        toast.success("Plan updated successfully!");
+        onClose();
+      } else {
+        toast.error(result.error || "Failed to update plan.");
+      }
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      toast.error("Something went wrong while updating the plan.");
+    }
   };
-
-  const getCurrentPlan = () => plans.find((p) => p.value === latestPlan);
-  const getSelectedPlan = () => plans.find((p) => p.value === selectedPlan);
+  const getCurrentPlan = () => AllPlans.find((p) => p.id === latestPlan);
+  const getSelectedPlan = () => AllPlans.find((p) => p.id === selectedPlan);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -110,13 +140,12 @@ export const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
         </DialogHeader>
 
         <div className="space-y-6">
-          {/* Current Plan Display */}
           <div>
             <Label className="text-gray-600">Current Plan</Label>
             <div className="mt-2 p-3 bg-gray-50 rounded-lg">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">{getCurrentPlan()?.label}</p>
+                  <p className="font-medium">{user.plan}</p>
                   <p className="text-sm text-gray-600">
                     {getCurrentPlan()?.price}
                   </p>
@@ -126,7 +155,6 @@ export const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
             </div>
           </div>
 
-          {/* Plan Selector */}
           <div>
             <Label htmlFor="newPlan">Select New Plan</Label>
             <Select
@@ -140,10 +168,12 @@ export const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
                 <SelectValue placeholder="Select a plan" />
               </SelectTrigger>
               <SelectContent>
-                {plans.map((plan) => (
-                  <SelectItem key={plan.value} value={plan.value}>
+                {AllPlans.map((plan) => (
+                  <SelectItem key={plan.id} value={plan.id}>
                     <div className="flex flex-col">
-                      <span className="font-medium">{plan.label}</span>
+                      <span className="font-medium">
+                        {plan.monthly_plan_name}
+                      </span>
                       <span className="text-sm text-gray-500">
                         {plan.price}
                       </span>
@@ -154,22 +184,42 @@ export const ChangePlanModal: React.FC<ChangePlanModalProps> = ({
             </Select>
           </div>
 
-          {/* Show Plan Features if different */}
           {selectedPlan && selectedPlan !== latestPlan && (
-            <div className="p-3 bg-green-50 rounded-lg border border-green-200">
-              <h4 className="font-medium text-green-800 mb-2">
-                New Plan Features:
-              </h4>
-              <ul className="text-sm text-green-700 space-y-1">
-                {getSelectedPlan()?.features.map((feature, index) => (
-                  <li key={index}>• {feature}</li>
-                ))}
-              </ul>
-            </div>
+            <>
+              <div>
+                <Label className="mb-2 block">Billing Cycle</Label>
+                <RadioGroup
+                  value={billingCycle}
+                  onValueChange={(value) =>
+                    setBillingCycle(value as "monthly" | "yearly")
+                  }
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="monthly" id="monthly" />
+                    <Label htmlFor="monthly">Monthly</Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="yearly" id="yearly" />
+                    <Label htmlFor="yearly">Yearly</Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
+              <div className="p-3 bg-green-50 rounded-lg border border-green-200">
+                <h4 className="font-medium text-green-800 mb-2">
+                  New Plan Features:
+                </h4>
+                <ul className="text-sm text-green-700 space-y-1">
+                  {getSelectedPlan()?.features?.map((feature, index) => (
+                    <li key={index}>• {feature}</li>
+                  ))}
+                </ul>
+              </div>
+            </>
           )}
         </div>
 
-        {/* Footer Buttons */}
         <DialogFooter>
           <Button variant="outline" onClick={onClose}>
             Cancel

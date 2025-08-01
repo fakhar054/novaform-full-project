@@ -52,35 +52,209 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
   onCancel,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const [formData, setFormData] = useState<AccountFormData>({
-    // Initial state matching your original component
+  const [formData, setFormData] = useState({
+    // General Info
     businessName: "",
     contactPerson: "",
     phone: "",
     email: "",
+    //extra
     language: "it",
     customDomain: "",
     notes: "",
-    legalOwnerFirstName: "",
-    legalOwnerLastName: "",
-    billingEmail: "",
+    sur_name: "",
+
+    //company tax info
+    tax_code: "",
+    sdi_code: "",
     vatNumber: "",
-    streetAddress: "",
+    billingEmail: "",
+    companyName: "",
+
+    //Registered Office Address
+    address: "",
+    cap: "",
     city: "",
-    zipCode: "",
     province: "",
     country: "IT",
+
+    // Billing Information
+    legalOwnerFirstName: "",
+    legalOwnerLastName: "",
+    streetAddress: "",
+    zipCode: "",
+
+    // Account Access & Subscription
     password: "",
     plan: "standard",
     accountStatus: true,
     sendOnboardingEmail: true,
   });
+  const italianProvinces = [
+    { code: "AG", name: "Agrigento" },
+    { code: "AL", name: "Alessandria" },
+    { code: "AN", name: "Ancona" },
+    { code: "AO", name: "Aosta" },
+    { code: "AR", name: "Arezzo" },
+    { code: "AP", name: "Ascoli Piceno" },
+    { code: "AT", name: "Asti" },
+    { code: "AV", name: "Avellino" },
+    { code: "BA", name: "Bari" },
+    { code: "BT", name: "Barletta-Andria-Trani" },
+    { code: "BL", name: "Belluno" },
+    { code: "BN", name: "Benevento" },
+    { code: "BG", name: "Bergamo" },
+    { code: "BI", name: "Biella" },
+    { code: "BO", name: "Bologna" },
+    { code: "BZ", name: "Bolzano" },
+    { code: "BS", name: "Brescia" },
+    { code: "BR", name: "Brindisi" },
+    { code: "CA", name: "Cagliari" },
+    { code: "CL", name: "Caltanissetta" },
+    { code: "CB", name: "Campobasso" },
+    { code: "CS", name: "Cosenza" },
+    { code: "CT", name: "Catania" },
+    { code: "CZ", name: "Catanzaro" },
+    { code: "CH", name: "Chieti" },
+    { code: "CO", name: "Como" },
+    { code: "CR", name: "Cremona" },
+    { code: "KR", name: "Crotone" },
+    { code: "CN", name: "Cuneo" },
+    { code: "EN", name: "Enna" },
+    { code: "FM", name: "Fermo" },
+    { code: "FE", name: "Ferrara" },
+    { code: "FI", name: "Firenze" },
+    { code: "FG", name: "Foggia" },
+    { code: "FC", name: "Forlì-Cesena" },
+    { code: "FR", name: "Frosinone" },
+    { code: "GE", name: "Genova" },
+    { code: "GO", name: "Gorizia" },
+    { code: "GR", name: "Grosseto" },
+    { code: "IM", name: "Imperia" },
+    { code: "IS", name: "Isernia" },
+    { code: "AQ", name: "L'Aquila" },
+    { code: "SP", name: "La Spezia" },
+    { code: "LT", name: "Latina" },
+    { code: "LE", name: "Lecce" },
+    { code: "LC", name: "Lecco" },
+    { code: "LI", name: "Livorno" },
+    { code: "LO", name: "Lodi" },
+    { code: "LU", name: "Lucca" },
+    { code: "MC", name: "Macerata" },
+    { code: "MN", name: "Mantova" },
+    { code: "MS", name: "Massa-Carrara" },
+    { code: "MT", name: "Matera" },
+    { code: "ME", name: "Messina" },
+    { code: "MI", name: "Milano" },
+    { code: "MO", name: "Modena" },
+    { code: "MB", name: "Monza e Brianza" },
+    { code: "NA", name: "Napoli" },
+    { code: "NO", name: "Novara" },
+    { code: "NU", name: "Nuoro" },
+    { code: "OR", name: "Oristano" },
+    { code: "PD", name: "Padova" },
+    { code: "PA", name: "Palermo" },
+    { code: "PR", name: "Parma" },
+    { code: "PV", name: "Pavia" },
+    { code: "PG", name: "Perugia" },
+    { code: "PU", name: "Pesaro e Urbino" },
+    { code: "PE", name: "Pescara" },
+    { code: "PC", name: "Piacenza" },
+    { code: "PI", name: "Pisa" },
+    { code: "PT", name: "Pistoia" },
+    { code: "PN", name: "Pordenone" },
+    { code: "PZ", name: "Potenza" },
+    { code: "PO", name: "Prato" },
+    { code: "RG", name: "Ragusa" },
+    { code: "RA", name: "Ravenna" },
+    { code: "RC", name: "Reggio Calabria" },
+    { code: "RE", name: "Reggio Emilia" },
+    { code: "RI", name: "Rieti" },
+    { code: "RN", name: "Rimini" },
+    { code: "RM", name: "Roma" },
+    { code: "RO", name: "Rovigo" },
+    { code: "SA", name: "Salerno" },
+    { code: "SS", name: "Sassari" },
+    { code: "SV", name: "Savona" },
+    { code: "SI", name: "Siena" },
+    { code: "SR", name: "Siracusa" },
+    { code: "SO", name: "Sondrio" },
+    { code: "SU", name: "Sud Sardegna" },
+    { code: "TA", name: "Taranto" },
+    { code: "TE", name: "Teramo" },
+    { code: "TR", name: "Terni" },
+    { code: "TO", name: "Torino" },
+    { code: "TP", name: "Trapani" },
+    { code: "TN", name: "Trento" },
+    { code: "TV", name: "Treviso" },
+    { code: "TS", name: "Trieste" },
+    { code: "UD", name: "Udine" },
+    { code: "VA", name: "Varese" },
+    { code: "VE", name: "Venezia" },
+    { code: "VB", name: "Verbano-Cusio-Ossola" },
+    { code: "VC", name: "Vercelli" },
+    { code: "VR", name: "Verona" },
+    { code: "VV", name: "Vibo Valentia" },
+    { code: "VI", name: "Vicenza" },
+    { code: "VT", name: "Viterbo" },
+  ];
 
-  const handleInputChange = (field: string, value: string | boolean) => {
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  const validateVAT = (vat: string) => {
+    return /^\d{11}$/.test(vat);
+  };
+
+  const validatePEC = (email: string) => {
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+  };
+
+  const validateSDI = (sdi: string) => {
+    return /^[A-Z0-9]{7}$/.test(sdi.toUpperCase());
+  };
+
+  const handleInputChange = async (field: string, value: string | boolean) => {
     setFormData((prev) => ({
       ...prev,
       [field]: value,
     }));
+
+    // Real-time validation for specific fields
+    const newErrors = { ...errors };
+    if (
+      field === "vatNumber" &&
+      typeof value === "string" &&
+      value &&
+      !validateVAT(value)
+    ) {
+      newErrors.vatNumber = "VAT number must be 11 digits";
+    } else if (field === "vatNumber") {
+      delete newErrors.vatNumber;
+    }
+
+    if (
+      field === "billingEmail" &&
+      typeof value === "string" &&
+      value &&
+      !validatePEC(value)
+    ) {
+      newErrors.pecEmail = "Please enter a valid email address";
+    } else if (field === "billingEmail") {
+      delete newErrors.pecEmail;
+    }
+
+    if (
+      field === "sdi_code" &&
+      typeof value === "string" &&
+      value &&
+      !validateSDI(value)
+    ) {
+      newErrors.sdiCode = "SDI code must be 7 alphanumeric characters";
+    } else if (field === "sdi_code") {
+      delete newErrors.sdiCode;
+    }
+
+    setErrors(newErrors);
   };
 
   const resetForm = () => {
@@ -111,7 +285,6 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     console.log("Creating account:", formData);
-
     // Step 1: Create user in Supabase Auth
     const { data: authData, error: authError } =
       await supabaseAdmin.auth.admin.createUser({
@@ -122,76 +295,129 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
 
     if (authError) {
       console.error("Error creating auth user:", authError.message);
-      toast.error("Error creating user", {
-        description: authError.message,
-      });
+      toast.error("Error creating user");
       return;
     }
 
     const userId = authData.user.id;
 
-    // Step 2: Insert profile info into Supabase 'users' table
     const { error: dbError } = await supabaseAdmin.from("users").insert({
-      //   uuid: userId, // Assuming 'uuid' is the column for Supabase user ID
-      businessName: formData.businessName,
-      contactPerson: formData.contactPerson,
-      phone: formData.phone,
-      email: formData.email,
-      language: formData.language,
-      customDomain: formData.customDomain,
-      notes: formData.notes,
-      legalOwnerFirstName: formData.legalOwnerFirstName,
-      legalOwnerLastName: formData.legalOwnerLastName,
-      billingEmail: formData.billingEmail,
-      vatNumber: formData.vatNumber,
-      streetAddress: formData.streetAddress,
-      city: formData.city,
-      zipCode: formData.zipCode,
-      province: formData.province,
-      country: formData.country,
-      plan: formData.plan,
+      businessName: formData.businessName || null,
+      contactPerson: formData.contactPerson || null,
+      phone: formData.phone || null,
+      email: formData.email || null,
+      language: formData.language || null,
+      customDomain: formData.customDomain || null,
+
+      notes: formData.notes || null,
+      legalOwnerFirstName: formData.legalOwnerFirstName || null,
+      legalOwnerLastName: formData.legalOwnerLastName || null,
+      billingEmail: formData.billingEmail || null,
+      vatNumber: formData.vatNumber || null,
+      streetAddress: formData.streetAddress || null,
+      city: formData.city || null,
+      province: formData.province || null,
+      country: formData.country || null,
+      plan: formData.plan || null,
       accountStatus: formData.accountStatus,
       sendOnboardingEmail: formData.sendOnboardingEmail,
+      sur_name: formData.sur_name || null,
+      companyName: formData.companyName || null,
+      tax_code: formData.tax_code || null,
+      sdi_code: formData.sdi_code || null,
+      address: formData.address || null,
+      cap: formData.cap || null,
     });
 
     if (dbError) {
       console.error("Error inserting to users table:", dbError.message);
-      toast.error(
-        "User created in auth, but failed to save user details in database",
-        {
-          description: dbError.message,
-        }
-      );
+      toast.error("User created in auth, but failed in DB");
       return;
     }
 
     console.log("User created and saved to DB");
-    toast.success("Account Created Successfully", {
-      description: `Account for ${formData.businessName} has been created.`,
+    toast("Account Created Successfully");
+
+    // Reset form
+    setFormData({
+      businessName: "",
+      contactPerson: "",
+      phone: "",
+      email: "",
+      language: "it",
+      customDomain: "",
+      notes: "",
+      legalOwnerFirstName: "",
+      legalOwnerLastName: "",
+      billingEmail: "",
+      vatNumber: "",
+      streetAddress: "",
+      city: "",
+      zipCode: "",
+      province: "",
+      country: "IT",
+      password: "",
+      plan: "standard",
+      accountStatus: true,
+      sendOnboardingEmail: true,
+      sur_name: "",
+      companyName: "",
+      tax_code: "",
+      sdi_code: "",
+      address: "",
+      cap: "",
     });
 
-    resetForm();
-    onSuccess && onSuccess(); // Call the success callback if provided
+    //  setIsCreating(false);
   };
 
-  const handleCancelClick = () => {
-    resetForm();
-    onCancel && onCancel(); // Call the cancel callback if provided
+  const handleCancel = () => {
+    // setIsCreating(false);
+    setFormData({
+      businessName: "",
+      contactPerson: "",
+      phone: "",
+      email: "",
+      language: "it",
+      customDomain: "",
+      notes: "",
+      legalOwnerFirstName: "",
+      legalOwnerLastName: "",
+      billingEmail: "",
+      vatNumber: "",
+      streetAddress: "",
+      city: "",
+      zipCode: "",
+      province: "",
+      country: "IT",
+      password: "",
+      plan: "standard",
+      accountStatus: true,
+      sendOnboardingEmail: true,
+      sur_name: "",
+      companyName: "",
+      tax_code: "",
+      sdi_code: "",
+      address: "",
+      cap: "",
+    });
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className="space-y-6 text-left">
       {/* General Info Section */}
       <Card className="bg-white border border-gray-200">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">
-            General Information
+            Referent Details
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="businessName">Business Name *</Label>
+              <Label htmlFor="businessName">
+                Nome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="businessName"
                 value={formData.businessName}
@@ -204,7 +430,9 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="contactPerson">Contact Person</Label>
+              <Label htmlFor="contactPerson">
+                Cognome <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="contactPerson"
                 value={formData.contactPerson}
@@ -218,17 +446,9 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone Number</Label>
-              <Input
-                id="phone"
-                value={formData.phone}
-                onChange={(e) => handleInputChange("phone", e.target.value)}
-                placeholder="+39 02 1234567"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="email">Email Address *</Label>
+              <Label htmlFor="email">
+                Email Personale <span className="text-red-500">*</span>
+              </Label>
               <Input
                 id="email"
                 type="email"
@@ -238,8 +458,209 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
                 required
               />
             </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="phone">
+                Numero di Telefono <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="phone"
+                value={formData.phone}
+                onChange={(e) => handleInputChange("phone", e.target.value)}
+                placeholder="+39 02 1234567"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Billing Information Section */}
+      <Card className="bg-white border border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-gray-900">
+            Company Tax Information
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="companyName">
+                Ragione Sociale / Nome Legale{" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="companyName"
+                value={formData.companyName}
+                onChange={(e) =>
+                  handleInputChange("companyName", e.target.value)
+                }
+                placeholder="Mario"
+              />
+            </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="vatNumber">
+                Partita IVA <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="vatNumber"
+                value={formData.vatNumber}
+                onChange={(e) => handleInputChange("vatNumber", e.target.value)}
+                placeholder="IT12345678901"
+                maxLength={11}
+                required
+              />
+              {errors.vatNumber && (
+                <p className="mt-1 text-sm text-red-600">{errors.vatNumber}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="tax_code">
+                Codice Fiscale (se diverso dalla P.IVA){" "}
+                <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="tax_code"
+                value={formData.tax_code}
+                onChange={(e) => handleInputChange("tax_code", e.target.value)}
+                placeholder="IT12345678901"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="sdi_code">
+                Codice SDI <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="sdi_code"
+                value={formData.sdi_code}
+                onChange={(e) => handleInputChange("sdi_code", e.target.value)}
+                placeholder="ABC1234"
+                maxLength={7}
+              />
+              {errors.sdiCode && (
+                <p className="mt-1 text-sm text-red-600">{errors.sdiCode}</p>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="billingEmail">
+                Email PEC <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="billingEmail"
+                type="email"
+                value={formData.billingEmail}
+                onChange={(e) =>
+                  handleInputChange("billingEmail", e.target.value)
+                }
+                placeholder="pec@example.pec.it"
+              />
+              {errors.pecEmail && (
+                <p className="mt-1 text-sm text-red-600">{errors.pecEmail}</p>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Registered Office Address Section */}
+      <Card className="bg-white border border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-gray-900">
+            Registered Office Address
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="address">
+                Indirizzo <span className="text-red-500">*</span>{" "}
+              </Label>
+              <Input
+                id="address"
+                value={formData.address}
+                onChange={(e) => handleInputChange("address", e.target.value)}
+                placeholder="Via Roma 123"
+              />
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="cap">
+                CAP <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="cap"
+                value={formData.cap}
+                onChange={(e) => handleInputChange("cap", e.target.value)}
+                placeholder="234561"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="vatNumber">
+                Città <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="city"
+                value={formData.city}
+                onChange={(e) => handleInputChange("city", e.target.value)}
+                placeholder="IT12345678901"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="province">Provincia *</Label>
+
+              <Select
+                value={formData.province}
+                onValueChange={(value) => handleInputChange("province", value)}
+              >
+                <SelectTrigger className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#078147] focus:border-transparent">
+                  <SelectValue placeholder="Select Province" />
+                </SelectTrigger>
+                <SelectContent>
+                  {italianProvinces.map((province) => (
+                    <SelectItem key={province.code} value={province.name}>
+                      {province.code} - {province.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
+            <div className="space-y-2">
+              <Label htmlFor="country">
+                Paese <span className="text-red-500">*</span>
+              </Label>
+              <Input
+                id="country"
+                value={formData.country}
+                onChange={(e) => handleInputChange("country", e.target.value)}
+                placeholder="ABC1234"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Additional Account Settings Section */}
+      <Card className="bg-white border border-gray-200">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-gray-900">
+            Additional Account Settings
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-2">
               <Label htmlFor="language">Default Language</Label>
@@ -259,7 +680,6 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
                 </SelectContent>
               </Select>
             </div>
-
             <div className="space-y-2">
               <Label htmlFor="customDomain">Custom Domain</Label>
               <Input
@@ -273,148 +693,16 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="notes">Internal Notes</Label>
-            <Textarea
-              id="notes"
-              value={formData.notes}
-              onChange={(e) => handleInputChange("notes", e.target.value)}
-              placeholder="Any additional notes about this account..."
-              rows={3}
-            />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Billing Information Section */}
-      <Card className="bg-white border border-gray-200">
-        <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
-            Billing Information
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-1 gap-6">
             <div className="space-y-2">
-              <Label htmlFor="legalOwnerFirstName">
-                Legal Owner First Name
-              </Label>
-              <Input
-                id="legalOwnerFirstName"
-                value={formData.legalOwnerFirstName}
-                onChange={(e) =>
-                  handleInputChange("legalOwnerFirstName", e.target.value)
-                }
-                placeholder="Mario"
+              <Label htmlFor="notes">Internal Notes</Label>
+              <Textarea
+                id="notes"
+                value={formData.notes}
+                onChange={(e) => handleInputChange("notes", e.target.value)}
+                placeholder="Any additional notes about this account..."
+                rows={3}
               />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="legalOwnerLastName">Legal Owner Last Name</Label>
-              <Input
-                id="legalOwnerLastName"
-                value={formData.legalOwnerLastName}
-                onChange={(e) =>
-                  handleInputChange("legalOwnerLastName", e.target.value)
-                }
-                placeholder="Rossi"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="space-y-2">
-              <Label htmlFor="billingEmail">Billing Email</Label>
-              <Input
-                id="billingEmail"
-                type="email"
-                value={formData.billingEmail}
-                onChange={(e) =>
-                  handleInputChange("billingEmail", e.target.value)
-                }
-                placeholder="billing@pharmacy.com"
-              />
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="vatNumber">VAT Number / Tax Code</Label>
-              <Input
-                id="vatNumber"
-                value={formData.vatNumber}
-                onChange={(e) => handleInputChange("vatNumber", e.target.value)}
-                placeholder="IT12345678901"
-              />
-            </div>
-          </div>
-
-          <div className="space-y-4">
-            <h4 className="font-medium text-gray-900">Legal Address</h4>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="streetAddress">Street Address and Number</Label>
-                <Input
-                  id="streetAddress"
-                  value={formData.streetAddress}
-                  onChange={(e) =>
-                    handleInputChange("streetAddress", e.target.value)
-                  }
-                  placeholder="Via Roma 123"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="city">City</Label>
-                <Input
-                  id="city"
-                  value={formData.city}
-                  onChange={(e) => handleInputChange("city", e.target.value)}
-                  placeholder="Milano"
-                />
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="space-y-2">
-                <Label htmlFor="zipCode">ZIP / Postal Code</Label>
-                <Input
-                  id="zipCode"
-                  value={formData.zipCode}
-                  onChange={(e) => handleInputChange("zipCode", e.target.value)}
-                  placeholder="20100"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="province">Province / Region</Label>
-                <Input
-                  id="province"
-                  value={formData.province}
-                  onChange={(e) =>
-                    handleInputChange("province", e.target.value)
-                  }
-                  placeholder="MI"
-                />
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="country">Country</Label>
-                <Select
-                  value={formData.country}
-                  onValueChange={(value) => handleInputChange("country", value)}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="IT">Italy</SelectItem>
-                    <SelectItem value="FR">France</SelectItem>
-                    <SelectItem value="DE">Germany</SelectItem>
-                    <SelectItem value="ES">Spain</SelectItem>
-                    <SelectItem value="US">United States</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
             </div>
           </div>
         </CardContent>
@@ -526,7 +814,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
         <Button
           type="button"
           variant="outline"
-          onClick={handleCancelClick}
+          onClick={handleCancel}
           className="flex-1 sm:flex-none"
         >
           <X className="w-4 h-4 mr-2" />

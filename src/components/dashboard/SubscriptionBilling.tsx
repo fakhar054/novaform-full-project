@@ -211,11 +211,11 @@ export const SubscriptionBilling: React.FC = () => {
       <h2 className="text-xl font-bold text-black mb-6">Available Plans</h2>
 
       {isAnnual ? (
-        <div className="plan_parent flex flex-wrap gap-4 justify-center">
+        <div className="plan_parent flex  flex-wrap gap-4 justify-center">
           {yearlyPlans.map((yearPlan) => (
             <div
               key={yearPlan.id}
-              className=" rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
+              className="bg-white rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
             >
               <h3 className="text-lg font-bold mb-2">{yearPlan.name}</h3>
               <p className="text-2xl font-bold mb-2 text-[#078147]">

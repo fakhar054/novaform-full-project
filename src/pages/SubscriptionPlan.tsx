@@ -93,7 +93,7 @@ const SubscriptionPlan = ({ planId }) => {
           },
           body: JSON.stringify({
             monthly_plan_name: formData.monthly_plan_name.trim(),
-            yearly_plan_name: formData.yearly_plan_name.trim(),
+            yearly_plan_name: formData.monthly_plan_name.trim(),
             plan_description: formData.plan_description.trim(),
             price_monthly: monthly,
             price_yearly: yearly,
@@ -126,7 +126,7 @@ const SubscriptionPlan = ({ planId }) => {
               htmlFor="monthly_plan_name"
               className="block text-sm font-medium text-gray-700"
             >
-              Monthly Plan Name
+              Plan Name
             </label>
             <input
               type="text"
@@ -158,7 +158,7 @@ const SubscriptionPlan = ({ planId }) => {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
+          {/* <div>
             <label
               htmlFor="yearly_plan_name"
               className="block text-sm font-medium text-gray-700"
@@ -174,7 +174,7 @@ const SubscriptionPlan = ({ planId }) => {
               placeholder="e.g. Premium"
               className="mt-1 block w-full p-2 border border-gray-300 rounded-md"
             />
-          </div>
+          </div> */}
           <div>
             <label
               htmlFor="price_yearly"

@@ -40,10 +40,11 @@ import { ChangePlanModal } from "./ChangePlanModal";
 import { ResetPasswordModal } from "./ResetPasswordModal";
 import { SendEmailModal } from "./SendEmailModal";
 import { ConfirmActionModal } from "./ConfirmActionModal";
-import { useToast } from "@/hooks/use-toast";
+// import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { CreateAccountForm } from "../CreateAccountForm";
 import Spinner from "../Spinner";
+import { toast } from "sonner";
 
 export const SuperAdminUsers: React.FC = () => {
   // `allUsers` will hold the complete, unfiltered list of users from Supabase
@@ -68,15 +69,9 @@ export const SuperAdminUsers: React.FC = () => {
     message: string;
   } | null>(null);
 
-  const { toast } = useToast();
-
   const handleFormSuccess = () => {
     setIsCreating(false);
     fetchUsers(); // Re-fetch users to show the newly created account
-    toast({
-      title: "Success",
-      description: "User account created successfully!",
-    });
   };
 
   const handleFormCancel = () => {
@@ -89,11 +84,6 @@ export const SuperAdminUsers: React.FC = () => {
     const { data, error } = await supabase.from("users").select("*");
     if (error) {
       console.error("Error fetching users:", error.message);
-      toast({
-        title: "Error fetching users",
-        description: "Failed to load user data.",
-        variant: "destructive",
-      });
     } else {
       // Filter out admin and super-admin roles directly upon fetching
       const nonAdminUsers = data.filter(
@@ -214,25 +204,36 @@ export const SuperAdminUsers: React.FC = () => {
     setShowSendEmail(true);
   };
 
-  const handleSuspendActivate = (user: any) => {
-    setSelectedUser(user);
-    const action = user.accountStatus === "active" ? "suspend" : "activate";
-    setConfirmAction({
-      type: action,
-      message: `Are you sure you want to ${action} ${user.businessName}?`,
-    });
-    setShowConfirmAction(true);
+  const handleSuspendActivate = async (user: any) => {
+    try {
+      // Step 1: Get latest user data by ID
+      const { data: freshUser, error } = await supabase
+        .from("users")
+        .select("id, accountStatus, businessName")
+        .eq("id", user.id)
+        .single();
+      if (error || !freshUser) {
+        toast.error("Failed to fetch latest user data");
+        return;
+      }
+      // Step 2: Determine action based on fresh status
+      const action =
+        freshUser.accountStatus === "active" ? "suspend" : "activate";
+      // Step 3: Set state and show confirmation modal
+      setSelectedUser(freshUser);
+      setConfirmAction({
+        type: action,
+        message: `Are you sure you want to ${action} ${freshUser.businessName}?`,
+      });
+      setShowConfirmAction(true);
+    } catch (err) {
+      console.error(err);
+      toast.error("An unexpected error occurred");
+    }
   };
 
   const handleConfirmAction = async () => {
-    if (!selectedUser || !selectedUser.uuid) {
-      toast({
-        title: "Error",
-        description: "User not selected or UUID missing for action.",
-        variant: "destructive",
-      });
-      return;
-    }
+    if (!selectedUser || !selectedUser.id) return;
 
     const newStatus =
       selectedUser.accountStatus === "suspended" ? "active" : "suspended";
@@ -240,27 +241,59 @@ export const SuperAdminUsers: React.FC = () => {
     const { error } = await supabase
       .from("users")
       .update({ accountStatus: newStatus })
-      .eq("uuid", selectedUser.uuid);
+      .eq("id", selectedUser.id);
 
     if (error) {
       console.error("Error updating account status:", error.message);
-      toast({
-        title: "Error",
-        description: "Failed to update account status.",
-        variant: "destructive",
-      });
+      toast.error("Failed to update status");
       return;
     }
 
-    toast({
-      title: "Success",
-      description: `User account ${newStatus}ed successfully.`,
-    });
-    await fetchUsers(); // Re-fetch all users to update the UI with new status
+    toast.success(
+      `Account successfully ${
+        newStatus === "active" ? "activated" : "suspended"
+      }`
+    );
+
+    await fetchUsers(); // Refresh UI
     setShowConfirmAction(false);
     setConfirmAction(null);
     setSelectedUser(null);
   };
+
+  // const handleSuspendActivate = (user: any) => {
+  //   setSelectedUser(user);
+  //   const action = user.accountStatus === "active" ? "suspend" : "activate";
+  //   setConfirmAction({
+  //     type: action,
+  //     message: `Are you sure you want to ${action} ${user.businessName}?`,
+  //   });
+  //   setShowConfirmAction(true);
+  // };
+
+  // const handleConfirmAction = async () => {
+  //   if (!selectedUser || !selectedUser.id) {
+  //     return;
+  //   }
+  //   const newStatus =
+  //     selectedUser.accountStatus === "suspended" ? "active" : "suspended";
+
+  //   const { error } = await supabase
+  //     .from("users")
+  //     .update({ accountStatus: newStatus })
+  //     .eq("uuid", selectedUser.uuid);
+
+  //   if (error) {
+  //     console.error("Error updating account status:", error.message);
+
+  //     return;
+  //   }
+
+  //   await fetchUsers(); // Re-fetch all users to update the UI with new status
+  //   setShowConfirmAction(false);
+  //   setConfirmAction(null);
+  //   setSelectedUser(null);
+  // };
 
   // Conditional rendering for UserDetailView
   if (showUserDetail && selectedUser) {
@@ -295,7 +328,7 @@ export const SuperAdminUsers: React.FC = () => {
         <>
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-left">
                 Users Management
               </h1>
               <p className="text-gray-600 mt-1">

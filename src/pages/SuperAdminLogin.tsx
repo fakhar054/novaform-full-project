@@ -21,8 +21,21 @@ import { useNavigate } from "react-router-dom";
 // import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+// import { logActivity } from "@/integrations/supabase/logActivity";
+// import { logActivity } from "@/integrations/supabase/logActivity";
+import logActivity from "@/integrations/supabase/logActivity";
 
 type LoginStep = "credentials" | "2fa";
+
+async function getUserLocation() {
+  try {
+    const res = await fetch("https://ipapi.co/json/");
+    const data = await res.json();
+    return `${data.city}, ${data.country_name}`;
+  } catch (e) {
+    return "Unknown";
+  }
+}
 
 const SuperAdminLogin = () => {
   const [step, setStep] = useState<LoginStep>("credentials");
@@ -35,7 +48,6 @@ const SuperAdminLogin = () => {
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [errors, setErrors] = useState({ email: "", password: "", code: "" });
   const navigate = useNavigate();
-  // const { toast } = useToast();
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,11 +69,25 @@ const SuperAdminLogin = () => {
         await supabase.auth.signInWithPassword({ email, password });
 
       if (authError || !authData?.user) {
+        const risk = "high";
         toast.error("Login failed");
+        //for getting user location
+        const location = await getUserLocation();
+        await logActivity({
+          userId: null,
+          username: "",
+          email,
+          actionType: "failed_login",
+          location,
+          risk,
+        });
         return;
       }
 
       const userId = authData.user.id;
+      const username = authData.user.user_metadata?.username || "not found";
+      const location = await getUserLocation();
+
       console.log("Authenticated user ID:", userId);
 
       // Check users table
@@ -71,8 +97,25 @@ const SuperAdminLogin = () => {
         .eq("user_id", userId)
         .maybeSingle();
 
-      if (userData?.role === "super-admin") {
-        // setStep("2fa"); // Show 2FA screen
+      if (
+        userData?.role === "super-admin" ||
+        userData?.role === "admin" ||
+        userData.role === "support-staff" ||
+        userData?.role === "billing"
+      ) {
+        await logActivity({
+          userId,
+          username,
+          email,
+          actionType: "login",
+          location,
+          risk: "normal",
+        });
+
+        await supabase
+          .from("users")
+          .update({ last_login: new Date().toISOString() })
+          .eq("user_id", userId);
         toast.success("Welcome Super Admin!");
         navigate("/super-admin");
         return;

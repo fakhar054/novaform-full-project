@@ -11,6 +11,7 @@ import { SuperAdminRoles } from "@/components/superadmin/SuperAdminRoles";
 import { SuperAdminEmail } from "@/components/superadmin/SuperAdminEmail";
 import { SubscriptionPlan } from "./SubscriptionPlan";
 import AllPlans from "./AllPlans";
+import { SuperAdminSubscriptionPlans } from "@/components/superadmin/SuperAdminSubscriptionPlans";
 
 export type SuperAdminSection =
   | "dashboard"
@@ -46,7 +47,7 @@ const SuperAdmin: React.FC = () => {
       case "email":
         return <SuperAdminEmail />;
       case "subscrption_plan":
-        return <SubscriptionPlan />;
+        return <SuperAdminSubscriptionPlans />;
       case "settings":
         return <SuperAdminSettings />;
       case "roles":

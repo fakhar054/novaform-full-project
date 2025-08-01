@@ -1,106 +1,185 @@
-import React, { useState } from 'react';
-import { Search, Filter, MoreVertical, Download, RefreshCw, ExternalLink, Copy, Mail } from 'lucide-react';
-import { Input } from '@/components/ui/input';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
+import React, { useEffect, useState } from "react";
+import {
+  Search,
+  Filter,
+  MoreVertical,
+  Download,
+  RefreshCw,
+  ExternalLink,
+  Copy,
+  Mail,
+} from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const paymentsData = [
   {
-    id: 'pay_1234567890',
-    customer: 'Farmacia Centrale Milano',
-    email: 'admin@farmaciacentrale.it',
-    amount: 199.00,
-    status: 'paid',
-    method: 'Credit Card (****4242)',
-    date: '2024-01-15',
-    plan: 'Premium Monthly',
-    stripeId: 'pi_1234567890'
+    id: "pay_1234567890",
+    customer: "Farmacia Centrale Milano",
+    email: "admin@farmaciacentrale.it",
+    amount: 199.0,
+    status: "paid",
+    method: "Credit Card (****4242)",
+    date: "2024-01-15",
+    plan: "Premium Monthly",
+    stripeId: "pi_1234567890",
   },
   {
-    id: 'pay_1234567891',
-    customer: 'Parafarmacia Benessere',
-    email: 'info@parafarmaciabenessere.it',
-    amount: 99.00,
-    status: 'paid',
-    method: 'Credit Card (****1234)',
-    date: '2024-01-14',
-    plan: 'Standard Monthly',
-    stripeId: 'pi_1234567891'
+    id: "pay_1234567891",
+    customer: "Parafarmacia Benessere",
+    email: "info@parafarmaciabenessere.it",
+    amount: 99.0,
+    status: "paid",
+    method: "Credit Card (****1234)",
+    date: "2024-01-14",
+    plan: "Standard Monthly",
+    stripeId: "pi_1234567891",
   },
   {
-    id: 'pay_1234567892',
-    customer: 'Farmacia San Marco',
-    email: 'contact@sanmarco.it',
-    amount: 199.00,
-    status: 'failed',
-    method: 'Credit Card (****5678)',
-    date: '2024-01-13',
-    plan: 'Premium Monthly',
-    stripeId: 'pi_1234567892'
+    id: "pay_1234567892",
+    customer: "Farmacia San Marco",
+    email: "contact@sanmarco.it",
+    amount: 199.0,
+    status: "failed",
+    method: "Credit Card (****5678)",
+    date: "2024-01-13",
+    plan: "Premium Monthly",
+    stripeId: "pi_1234567892",
   },
   {
-    id: 'pay_1234567893',
-    customer: 'Pharmacy Plus',
-    email: 'hello@pharmacyplus.com',
-    amount: 49.00,
-    status: 'pending',
-    method: 'Bank Transfer',
-    date: '2024-01-12',
-    plan: 'Basic Monthly',
-    stripeId: 'pi_1234567893'
-  }
+    id: "pay_1234567893",
+    customer: "Pharmacy Plus",
+    email: "hello@pharmacyplus.com",
+    amount: 49.0,
+    status: "pending",
+    method: "Bank Transfer",
+    date: "2024-01-12",
+    plan: "Basic Monthly",
+    stripeId: "pi_1234567893",
+  },
 ];
 
 export const SuperAdminPayments: React.FC = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [showPaymentLinkModal, setShowPaymentLinkModal] = useState(false);
-  const [generatedLink, setGeneratedLink] = useState('');
+  const [generatedLink, setGeneratedLink] = useState("");
   const [showGeneratedLink, setShowGeneratedLink] = useState(false);
+  const [fetchedData, setFetchedData] = useState([]);
   const { toast } = useToast();
+
+  const fetchPaymentTable = async () => {
+    const { data, error } = await supabase.from("subscription").select("*");
+    if (error) {
+      console.error("Error fetching subscriptions:", error.message);
+      return;
+    }
+    console.log("Fetched subscriptions:", data);
+    setFetchedData(data);
+  };
+
+  useEffect(() => {
+    fetchPaymentTable();
+  }, []);
+
+  // 24‑hour "DD‑MM‑YYYY HH:MM" in Asia/Karachi
+  const fmtDateOnly = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    timeZone: "Asia/Karachi",
+  });
+
+  const formatCreatedAt = (iso?: string) =>
+    iso ? fmtDateOnly.format(new Date(iso)).replaceAll("/", "-") : "";
 
   // Payment link form state
   const [linkForm, setLinkForm] = useState({
-    amount: '',
-    description: '',
-    planType: '',
-    recipientEmail: '',
-    expiration: '7 days'
+    amount: "",
+    description: "",
+    planType: "",
+    recipientEmail: "",
+    expiration: "7 days",
   });
 
-  const filteredPayments = paymentsData.filter(payment => {
-    const matchesSearch = payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         payment.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || payment.status === statusFilter;
-    
+  const filteredPayments = paymentsData.filter((payment) => {
+    const matchesSearch =
+      payment.customer.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      payment.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus =
+      statusFilter === "all" || payment.status === statusFilter;
+
     return matchesSearch && matchesStatus;
   });
 
   const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'paid':
-        return <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Paid</Badge>;
-      case 'failed':
-        return <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Failed</Badge>;
-      case 'pending':
-        return <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">Pending</Badge>;
-      case 'refunded':
-        return <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">Refunded</Badge>;
+      case "paid":
+        return (
+          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+            Paid
+          </Badge>
+        );
+      case "failed":
+        return (
+          <Badge className="bg-red-100 text-red-800 hover:bg-red-100">
+            Failed
+          </Badge>
+        );
+      case "pending":
+        return (
+          <Badge className="bg-yellow-100 text-yellow-800 hover:bg-yellow-100">
+            Pending
+          </Badge>
+        );
+      case "refunded":
+        return (
+          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-100">
+            Refunded
+          </Badge>
+        );
       default:
         return <Badge variant="secondary">{status}</Badge>;
     }
   };
 
   const totalRevenue = paymentsData
-    .filter(p => p.status === 'paid')
+    .filter((p) => p.status === "paid")
     .reduce((sum, p) => sum + p.amount, 0);
 
   const handleGeneratePaymentLink = () => {
@@ -115,7 +194,9 @@ export const SuperAdminPayments: React.FC = () => {
     }
 
     // Generate simulated payment link
-    const simulatedLink = `https://novafarm.app/payments/simulated/${Math.random().toString(36).substring(2, 15)}`;
+    const simulatedLink = `https://novafarm.app/payments/simulated/${Math.random()
+      .toString(36)
+      .substring(2, 15)}`;
     setGeneratedLink(simulatedLink);
     setShowGeneratedLink(true);
 
@@ -138,13 +219,13 @@ export const SuperAdminPayments: React.FC = () => {
   const closeModal = () => {
     setShowPaymentLinkModal(false);
     setShowGeneratedLink(false);
-    setGeneratedLink('');
+    setGeneratedLink("");
     setLinkForm({
-      amount: '',
-      description: '',
-      planType: '',
-      recipientEmail: '',
-      expiration: '7 days'
+      amount: "",
+      description: "",
+      planType: "",
+      recipientEmail: "",
+      expiration: "7 days",
     });
   };
 
@@ -152,10 +233,14 @@ export const SuperAdminPayments: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Payments & Subscriptions</h1>
-          <p className="text-gray-600 mt-1">Monitor all payment transactions and billing</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Payments & Subscriptions
+          </h1>
+          <p className="text-gray-600 mt-1 text-left">
+            Monitor all payment transactions and billing
+          </p>
         </div>
-        <Button 
+        <Button
           className="bg-[#1C9B7A] hover:bg-[#158a69] mt-4 sm:mt-0"
           onClick={() => setShowPaymentLinkModal(true)}
         >
@@ -169,7 +254,9 @@ export const SuperAdminPayments: React.FC = () => {
           <CardContent className="p-4">
             <div className="text-center">
               <p className="text-sm text-gray-600">Total Revenue</p>
-              <p className="text-2xl font-bold text-[#1C9B7A]">€{totalRevenue.toFixed(2)}</p>
+              <p className="text-2xl font-bold text-[#1C9B7A]">
+                €{totalRevenue.toFixed(2)}
+              </p>
             </div>
           </CardContent>
         </Card>
@@ -178,7 +265,7 @@ export const SuperAdminPayments: React.FC = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600">Successful Payments</p>
               <p className="text-2xl font-bold text-green-600">
-                {paymentsData.filter(p => p.status === 'paid').length}
+                {paymentsData.filter((p) => p.status === "paid").length}
               </p>
             </div>
           </CardContent>
@@ -188,7 +275,7 @@ export const SuperAdminPayments: React.FC = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600">Failed Payments</p>
               <p className="text-2xl font-bold text-red-600">
-                {paymentsData.filter(p => p.status === 'failed').length}
+                {paymentsData.filter((p) => p.status === "failed").length}
               </p>
             </div>
           </CardContent>
@@ -198,7 +285,7 @@ export const SuperAdminPayments: React.FC = () => {
             <div className="text-center">
               <p className="text-sm text-gray-600">Pending</p>
               <p className="text-2xl font-bold text-yellow-600">
-                {paymentsData.filter(p => p.status === 'pending').length}
+                {paymentsData.filter((p) => p.status === "pending").length}
               </p>
             </div>
           </CardContent>
@@ -218,7 +305,7 @@ export const SuperAdminPayments: React.FC = () => {
                 className="pl-10"
               />
             </div>
-            
+
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-48">
                 <SelectValue placeholder="Filter by status" />
@@ -238,47 +325,72 @@ export const SuperAdminPayments: React.FC = () => {
       {/* Payments Table */}
       <Card className="bg-white border border-gray-200">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900">
+          <CardTitle className="text-lg font-semibold text-gray-900 text-left">
             Payment Transactions ({filteredPayments.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           <div className="overflow-x-auto">
-            <Table>
+            <Table className="w-full ">
               <TableHeader>
                 <TableRow className="border-gray-200">
-                  <TableHead className="font-semibold text-gray-900">Customer</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Amount</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Status</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Method</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Plan</TableHead>
-                  <TableHead className="font-semibold text-gray-900">Date</TableHead>
-                  <TableHead className="font-semibold text-gray-900 text-right">Actions</TableHead>
+                  <TableHead className="font-semibold text-gray-900">
+                    Customer
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">
+                    Amount
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">
+                    Status
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">
+                    Method
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">
+                    Plan
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900">
+                    Date
+                  </TableHead>
+                  <TableHead className="font-semibold text-gray-900 text-right">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
+
               <TableBody>
-                {filteredPayments.map((payment) => (
-                  <TableRow key={payment.id} className="border-gray-200 hover:bg-gray-50">
+                {fetchedData.map((payment) => (
+                  <TableRow
+                    key={payment.id}
+                    className="border-gray-200 hover:bg-gray-50 text-left"
+                  >
                     <TableCell>
                       <div>
-                        <div className="font-medium text-gray-900">{payment.customer}</div>
-                        <div className="text-sm text-gray-500">{payment.email}</div>
+                        <div className="font-medium text-gray-900">
+                          {payment?.customer_name?.trim() || ""}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {payment.email}
+                        </div>
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="font-medium text-gray-900">€{payment.amount.toFixed(2)}</div>
+                      <div className="font-medium text-gray-900">
+                        ${payment.amount_paid}
+                        {/* €{payment.amount.toFixed(2)} */}
+                      </div>
                     </TableCell>
                     <TableCell>
-                      {getStatusBadge(payment.status)}
+                      {getStatusBadge(payment.subscription_status)}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
-                      {payment.method}
+                      {payment.method}Credit Card (****4242)
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
-                      {payment.plan}
+                      {payment.plan_name}
                     </TableCell>
                     <TableCell className="text-sm text-gray-500">
-                      {payment.date}
+                      {formatCreatedAt(payment.created_at)}
                     </TableCell>
                     <TableCell className="text-right">
                       <DropdownMenu>
@@ -289,8 +401,15 @@ export const SuperAdminPayments: React.FC = () => {
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end" className="w-48">
                           <DropdownMenuItem>
-                            <ExternalLink className="w-4 h-4 mr-2" />
-                            View in Stripe
+                            <a
+                              href="https://stripe.com"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="flex items-center"
+                            >
+                              <ExternalLink className="w-4 h-4 mr-2" />
+                              View in Stripe
+                            </a>
                           </DropdownMenuItem>
                           <DropdownMenuItem>
                             <Download className="w-4 h-4 mr-2" />
@@ -300,7 +419,7 @@ export const SuperAdminPayments: React.FC = () => {
                             <RefreshCw className="w-4 h-4 mr-2" />
                             Resend Invoice
                           </DropdownMenuItem>
-                          {payment.status === 'failed' && (
+                          {payment.status === "failed" && (
                             <DropdownMenuItem>
                               <RefreshCw className="w-4 h-4 mr-2" />
                               Retry Payment
@@ -318,10 +437,15 @@ export const SuperAdminPayments: React.FC = () => {
       </Card>
 
       {/* Generate Payment Link Modal */}
-      <Dialog open={showPaymentLinkModal} onOpenChange={setShowPaymentLinkModal}>
+      <Dialog
+        open={showPaymentLinkModal}
+        onOpenChange={setShowPaymentLinkModal}
+      >
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-xl font-semibold text-gray-900">Generate Payment Link</DialogTitle>
+            <DialogTitle className="text-xl font-semibold text-gray-900">
+              Generate Payment Link
+            </DialogTitle>
             <DialogDescription className="text-gray-600">
               Create a secure payment link for your customer
             </DialogDescription>
@@ -330,7 +454,10 @@ export const SuperAdminPayments: React.FC = () => {
           {!showGeneratedLink ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="amount" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="amount"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Amount (€) *
                 </Label>
                 <Input
@@ -339,30 +466,45 @@ export const SuperAdminPayments: React.FC = () => {
                   step="0.01"
                   placeholder="0.00"
                   value={linkForm.amount}
-                  onChange={(e) => setLinkForm({ ...linkForm, amount: e.target.value })}
+                  onChange={(e) =>
+                    setLinkForm({ ...linkForm, amount: e.target.value })
+                  }
                   className="border-gray-300"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="description" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="description"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Payment Description *
                 </Label>
                 <Textarea
                   id="description"
                   placeholder="e.g., Premium subscription renewal"
                   value={linkForm.description}
-                  onChange={(e) => setLinkForm({ ...linkForm, description: e.target.value })}
+                  onChange={(e) =>
+                    setLinkForm({ ...linkForm, description: e.target.value })
+                  }
                   className="border-gray-300 resize-none"
                   rows={3}
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="planType" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="planType"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Plan Type
                 </Label>
-                <Select value={linkForm.planType} onValueChange={(value) => setLinkForm({ ...linkForm, planType: value })}>
+                <Select
+                  value={linkForm.planType}
+                  onValueChange={(value) =>
+                    setLinkForm({ ...linkForm, planType: value })
+                  }
+                >
                   <SelectTrigger className="border-gray-300">
                     <SelectValue placeholder="Select plan type" />
                   </SelectTrigger>
@@ -375,7 +517,10 @@ export const SuperAdminPayments: React.FC = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="email"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Recipient Email
                 </Label>
                 <Input
@@ -383,16 +528,26 @@ export const SuperAdminPayments: React.FC = () => {
                   type="email"
                   placeholder="customer@example.com"
                   value={linkForm.recipientEmail}
-                  onChange={(e) => setLinkForm({ ...linkForm, recipientEmail: e.target.value })}
+                  onChange={(e) =>
+                    setLinkForm({ ...linkForm, recipientEmail: e.target.value })
+                  }
                   className="border-gray-300"
                 />
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="expiration" className="text-sm font-medium text-gray-700">
+                <Label
+                  htmlFor="expiration"
+                  className="text-sm font-medium text-gray-700"
+                >
                   Link Expiration
                 </Label>
-                <Select value={linkForm.expiration} onValueChange={(value) => setLinkForm({ ...linkForm, expiration: value })}>
+                <Select
+                  value={linkForm.expiration}
+                  onValueChange={(value) =>
+                    setLinkForm({ ...linkForm, expiration: value })
+                  }
+                >
                   <SelectTrigger className="border-gray-300">
                     <SelectValue />
                   </SelectTrigger>
@@ -408,7 +563,9 @@ export const SuperAdminPayments: React.FC = () => {
           ) : (
             <div className="space-y-4">
               <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
-                <h4 className="font-medium text-green-800 mb-2">Payment Link Generated</h4>
+                <h4 className="font-medium text-green-800 mb-2">
+                  Payment Link Generated
+                </h4>
                 <p className="text-sm text-green-700 mb-3">
                   Your payment link has been created successfully.
                 </p>
@@ -449,11 +606,15 @@ export const SuperAdminPayments: React.FC = () => {
           )}
 
           <DialogFooter>
-            <Button variant="outline" onClick={closeModal} className="border-gray-300">
-              {showGeneratedLink ? 'Close' : 'Cancel'}
+            <Button
+              variant="outline"
+              onClick={closeModal}
+              className="border-gray-300"
+            >
+              {showGeneratedLink ? "Close" : "Cancel"}
             </Button>
             {!showGeneratedLink && (
-              <Button 
+              <Button
                 onClick={handleGeneratePaymentLink}
                 className="bg-[#1C9B7A] hover:bg-[#158a69]"
               >

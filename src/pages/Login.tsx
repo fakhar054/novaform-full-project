@@ -8,6 +8,8 @@ import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
+// import { logActivity } from "@/integrations/supabase/activity";
+import logActivity from "@/integrations/supabase/logActivity";
 
 const Login = () => {
   const navigate = useNavigate();
@@ -18,73 +20,28 @@ const Login = () => {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
-  const updateLastLogin = async () => {
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
+  // const updateLastLogin = async () => {
+  //   const {
+  //     data: { user },
+  //     error: userError,
+  //   } = await supabase.auth.getUser();
 
-    if (userError || !user) {
-      console.error("User not found:", userError);
-      return;
-    }
+  //   if (userError || !user) {
+  //     console.error("User not found:", userError);
+  //     return;
+  //   }
 
-    const { error: updateError } = await (supabase as any)
-      .from("users")
-      .update({ lastLogin: new Date().toISOString() })
-      .eq("uuid", user.id);
+  //   const { error: updateError } = await (supabase as any)
+  //     .from("users")
+  //     .update({ lastLogin: new Date().toISOString() })
+  //     .eq("id", user.id);
 
-    if (updateError) {
-      console.error("Failed to update last login:", updateError.message);
-    } else {
-      console.log("Last login time updated!");
-    }
-  };
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const newErrors = { email: "", password: "" };
-    if (!email) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(email)) {
-      newErrors.email = "Please enter a valid email";
-    }
-    if (!password) {
-      newErrors.password = "Password is required";
-    } else if (password.length < 6) {
-      newErrors.password = "Password must be at least 6 characters";
-    }
-    setErrors(newErrors);
-    if (newErrors.email || newErrors.password) return;
-
-    try {
-      setLoading(true);
-
-      // Try to login
-      const { data: loginData, error: loginError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-
-      if (loginData?.session) {
-        toast.success("Welcome back!");
-        console.log("User logged in:", loginData.user);
-        await updateLastLogin();
-
-        navigate("/dashboard");
-        return;
-      }
-
-      if (loginError) {
-        alert(loginError.message);
-      }
-    } catch (err) {
-      alert("Unexpected error. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  //   if (updateError) {
+  //     console.error("Failed to update last login:", updateError.message);
+  //   } else {
+  //     console.log("Last login time updated!");
+  //   }
+  // };
 
   // const handleSubmit = async (e: React.FormEvent) => {
   //   e.preventDefault();
@@ -103,8 +60,6 @@ const Login = () => {
   //   if (newErrors.email || newErrors.password) return;
   //   try {
   //     setLoading(true);
-
-  //     // Try to login first
   //     const { data: loginData, error: loginError } =
   //       await supabase.auth.signInWithPassword({
   //         email,
@@ -113,28 +68,19 @@ const Login = () => {
 
   //     if (loginData?.session) {
   //       toast.success("Welcome back!");
-
   //       console.log("User logged in:", loginData.user);
+  //       // await updateLastLogin();
+  //       await logActivity(
+  //         loginData.user.id || null,
+  //         loginData.user.email || null,
+  //         "login"
+  //       );
+  //       navigate("/dashboard");
+
   //       return;
   //     }
 
-  //     if (loginError?.message === "Invalid login credentials") {
-  //       const { data: signupData, error: signupError } =
-  //         await supabase.auth.signUp({
-  //           email,
-  //           password,
-  //         });
-
-  //       if (signupData?.user) {
-  //         alert("Registered successfully! Please check your email to confirm.");
-  //         console.log("User signed up:", signupData.user);
-  //         return;
-  //       }
-
-  //       if (signupError) {
-  //         alert(signupError.message);
-  //       }
-  //     } else if (loginError) {
+  //     if (loginError) {
   //       alert(loginError.message);
   //     }
   //   } catch (err) {
@@ -144,6 +90,75 @@ const Login = () => {
   //     setLoading(false);
   //   }
   // };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const newErrors = { email: "", password: "" };
+
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!/\S+@\S+\.\S+/.test(email)) {
+      newErrors.email = "Please enter a valid email";
+    }
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 6) {
+      newErrors.password = "Password must be at least 6 characters";
+    }
+
+    setErrors(newErrors);
+    if (newErrors.email || newErrors.password) return;
+
+    try {
+      setLoading(true);
+
+      const { data: loginData, error: loginError } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+
+      // Default values
+      let actionType = "login";
+      let user_id = null;
+
+      if (loginData?.user) {
+        user_id = loginData.user.id;
+        toast.success("Welcome back!");
+        console.log("User logged in:", loginData.user);
+
+        await logActivity(user_id, email, actionType); // success
+        navigate("/dashboard");
+        return;
+      }
+
+      // Handle failed login
+      if (loginError) {
+        actionType = "failed";
+
+        // Optional: try to fetch user_id from users table
+        const { data: userRow } = await supabase
+          .from("users")
+          .select("user_id")
+          .eq("email", email)
+          .maybeSingle();
+
+        if (userRow) {
+          user_id = userRow.user_id;
+        }
+
+        await logActivity(user_id, email, actionType); // failed
+        alert(loginError.message);
+      }
+    } catch (err) {
+      alert("Unexpected error. Please try again.");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex">

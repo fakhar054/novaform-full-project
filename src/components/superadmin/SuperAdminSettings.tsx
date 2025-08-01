@@ -374,7 +374,7 @@ export const SuperAdminSettings: React.FC = () => {
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 text-left">
             Platform Settings
           </h1>
           <p className="text-gray-600 mt-1">

@@ -207,7 +207,7 @@ export const SuperAdminOverview: React.FC<SuperAdminOverviewProps> = ({
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Super Admin Dashboard
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-left">
             Monitor and manage your NovaFarm platform
           </p>
         </div>

@@ -88,12 +88,12 @@ const mockUsers: AdminUser[] = [
 ];
 
 const mockRoles: Role[] = [
-  // {
-  //   id: '1',
-  //   name: 'Super Admin',
-  //   description: 'Full system access',
-  //   permissions: ['users', 'payments', 'settings', 'analytics', 'billing']
-  // },
+  {
+    id: "1",
+    name: "Admin",
+    description: "Full system access",
+    permissions: ["users", "analytics"],
+  },
   {
     id: "2",
     name: "Support Staff",
@@ -186,7 +186,11 @@ export const SuperAdminRoles: React.FC = () => {
   };
 
   const fetchUsers = async () => {
-    const { data, error } = await supabase.from("team_mate").select("*");
+    const { data, error } = await supabase
+      .from("users")
+      .select("*")
+      .in("role", ["support-staff", "billing", "admin"])
+      .order("created_at", { ascending: false });
 
     if (error) {
       console.error("Error fetching users:", error.message);
@@ -196,6 +200,26 @@ export const SuperAdminRoles: React.FC = () => {
 
     return data;
   };
+
+  const fmtDateTime = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Rome",
+  });
+
+  const formatCreatedAt = (iso?: string) =>
+    iso
+      ? fmtDateTime
+          .format(new Date(iso))
+          .replaceAll("/", "-")
+          .replace(",", "")
+          .replace(/\s+/, " ")
+          .trim()
+      : "";
 
   useEffect(() => {
     fetchUsers();
@@ -210,6 +234,8 @@ export const SuperAdminRoles: React.FC = () => {
     } = await supabase.auth.getSession();
     const accessToken = session?.access_token;
 
+    const user_id = userId.id;
+
     const res = await fetch(
       "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/delete-teamate",
       {
@@ -218,7 +244,7 @@ export const SuperAdminRoles: React.FC = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ user_id: userId }),
+        body: JSON.stringify({ user_id: user_id }),
       }
     );
     if (!res.ok) {
@@ -227,98 +253,122 @@ export const SuperAdminRoles: React.FC = () => {
       alert("Failed to delete user");
     } else {
       toast.success("User deleted!");
-      // alert("User deleted!");
+      fetchUsers();
     }
+  };
+
+  const getAccessToken = async () => {
+    const {
+      data: { session },
+      error,
+    } = await supabase.auth.getSession();
+
+    if (error) {
+      console.error("Error getting session:", error.message);
+      return null;
+    }
+
+    const accessToken = session?.access_token;
+    console.log("Access token:", accessToken);
+    return accessToken;
   };
 
   const handleAddUser = async (e) => {
     e.preventDefault();
-
+    const accessToken = await getAccessToken();
     const { firstName, lastName, email, role, password } = newUser;
-    const fullName = `${firstName.trim()} ${lastName.trim()}`;
 
     try {
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError || !session?.access_token) {
-        console.error("No valid session found.");
-        alert("Unauthorized: Please log in as Super Admin.");
-        return;
-      }
-
-      const res = await fetch(
+      const response = await fetch(
         "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/add-user-with-role",
         {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${session.access_token}`,
+            Authorization: `Bearer ${accessToken}`,
           },
           body: JSON.stringify({
+            firstName,
+            lastName,
             email,
             password,
-            name: fullName,
             role,
-            status: true,
+            // status: "active",
           }),
         }
       );
 
-      const result = await res.json();
+      const result = await response.json();
 
-      if (res.ok) {
-        toast.success("User created!");
-        // alert("User created!");
-        setUsers((prev) => [...prev, { name: fullName, email, role }]);
-        setNewUser({
-          firstName: "",
-          lastName: "",
-          email: "",
-          role: "",
-          password: "",
-        });
+      if (response.ok) {
+        console.log("✅ User added successfully:", result);
         setIsAddUserOpen(false);
+        toast.success("User added successfully");
       } else {
-        const errorMessage =
-          typeof result?.error === "string"
-            ? result.error
-            : result?.error?.message || "Unknown error occurred";
-
-        console.error("Error:", errorMessage);
-        toast.success("Failed to create user");
-        // alert("Failed to create user: " + errorMessage);
+        console.error("❌ Error:", result.error || result.message);
       }
-    } catch (err) {
-      console.error("Network or server error:", err);
-      alert("Failed to create user: Network or server error.");
+    } catch (error) {
+      console.error("❌ Unexpected error:", error.message);
     }
   };
 
-  // const handleAddUser_main = async () => {
+  // try {
+  //   const {
+  //     data: { session },
+  //     error: sessionError,
+  //   } = await supabase.auth.getSession();
+
+  //   if (sessionError || !session?.access_token) {
+  //     console.error("No valid session found.");
+  //     alert("Unauthorized: Please log in as Super Admin.");
+  //     return;
+  //   }
+
   //   const res = await fetch(
-  //     "https://your-project-id.supabase.co/functions/v1/add-user",
+  //     "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/add-user-with-role",
   //     {
   //       method: "POST",
   //       headers: {
   //         "Content-Type": "application/json",
+  //         Authorization: `Bearer ${session.access_token}`,
   //       },
   //       body: JSON.stringify({
-  //         email: "support@example.com",
-  //         password: "12345678",
-  //         role: "support",
-  //         active: true, // or false
-  //         name: "Support Staff",
-  //         phone: "1234567890", // example of another custom field
+  //         email,
+  //         password,
+  //         name: fullName,
+  //         role,
+  //         status: true,
   //       }),
   //     }
   //   );
 
-  //   const data = await res.json();
-  //   console.log(data);
-  // };
+  //   const result = await res.json();
+
+  //   if (res.ok) {
+  //     toast.success("User created!");
+  //     setUsers((prev) => [...prev, { name: fullName, email, role }]);
+  //     setNewUser({
+  //       firstName: "",
+  //       lastName: "",
+  //       email: "",
+  //       role: "",
+  //       password: "",
+  //     });
+  //     setIsAddUserOpen(false);
+  //   } else {
+  //     const errorMessage =
+  //       typeof result?.error === "string"
+  //         ? result.error
+  //         : result?.error?.message || "Unknown error occurred";
+
+  //     console.error("Error:", errorMessage);
+  //     toast.success("Failed to create user");
+  //     // alert("Failed to create user: " + errorMessage);
+  //   }
+  // } catch (err) {
+  //   console.error("Network or server error:", err);
+  //   alert("Failed to create user: Network or server error.");
+  // }
 
   const handleSuspendUser = (userId: string) => {
     setUsers(
@@ -466,7 +516,7 @@ export const SuperAdminRoles: React.FC = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Team Members & Access Control
           </h1>
-          <p className="text-gray-600 mt-1">
+          <p className="text-gray-600 mt-1 text-left">
             Manage internal team access and permissions
           </p>
         </div>
@@ -602,24 +652,24 @@ export const SuperAdminRoles: React.FC = () => {
                   <TableBody>
                     {all_users.map((user) => (
                       <TableRow key={user.id}>
-                        <TableCell className="font-medium">
+                        <TableCell className="font-medium text-left">
                           <div>
-                            <div>{user.name}</div>
+                            <div>{`${user.firstName} ${user.lastName}`}</div>
                             <div className="text-sm text-gray-500 sm:hidden">
                               {user.email}
                             </div>
                           </div>
                         </TableCell>
-                        <TableCell className="hidden sm:table-cell">
+                        <TableCell className="hidden sm:table-cell text-left">
                           {user.email}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="text-left">
                           <Badge className={getRoleColor(user.role)}>
                             {user.role}
                           </Badge>
                         </TableCell>
                         <TableCell className="hidden md:table-cell text-sm text-gray-600">
-                          {user.last_login}
+                          {formatCreatedAt(user.last_login)}
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
@@ -637,29 +687,16 @@ export const SuperAdminRoles: React.FC = () => {
                             <Button variant="ghost" size="sm">
                               <Edit className="w-4 h-4" />
                             </Button>
-                            {/* <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() =>
-                                setConfirmAction({
-                                  isOpen: true,
-                                  action: () => handleDeleteUser_main(user.id),
-                                  title: "Delete Team Member",
-                                  message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
-                                })
-                              }
-                            >
-                              <Trash2 className="w-4 h-4 text-red-600" />
-                            </Button> */}
+
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() =>
                                 setConfirmAction({
                                   isOpen: true,
-                                  action: () => handleDeleteUser_main(user.id),
+                                  action: () => handleDeleteUser_main(user),
                                   title: "Delete Team Member",
-                                  message: `Are you sure you want to delete ${user.name}? This action cannot be undone.`,
+                                  message: `Are you sure you want to delete ${user.firstName}? This action cannot be undone.`,
                                 })
                               }
                             >
