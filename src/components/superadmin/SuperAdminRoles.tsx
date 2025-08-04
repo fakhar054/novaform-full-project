@@ -43,6 +43,7 @@ import { ConfirmActionModal } from "./ConfirmActionModal";
 import { supabase } from "@/integrations/supabase/client";
 import { permission } from "process";
 import { toast } from "sonner";
+import { EditUserModal } from "./EditUserModal";
 
 interface AdminUser {
   id: string;
@@ -151,6 +152,9 @@ export const SuperAdminRoles: React.FC = () => {
     analytics: "analytics-reports",
     billing: "billing-invoices",
   };
+
+  const [isEditUserOpen, setIsEditUserOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState(null);
 
   const fetchPermissionsForRoles = async () => {
     const updatedRoles = await Promise.all(
@@ -438,6 +442,17 @@ export const SuperAdminRoles: React.FC = () => {
     });
   };
 
+  const handleEditUser = (user) => {
+    setSelectedUser(user);
+    setIsEditUserOpen(true);
+  };
+
+  const handleSaveUser = (updatedUser: AdminUser) => {
+    setUsers(
+      users.map((user) => (user.id === updatedUser.id ? updatedUser : user))
+    );
+  };
+
   const handleSave_permissions = async () => {
     if (!selectedRole) return;
 
@@ -671,7 +686,7 @@ export const SuperAdminRoles: React.FC = () => {
                         <TableCell className="hidden md:table-cell text-sm text-gray-600">
                           {formatCreatedAt(user.last_login)}
                         </TableCell>
-                        <TableCell>
+                        {/* <TableCell>
                           <div className="flex items-center space-x-2">
                             <Switch
                               checked={user.status}
@@ -681,10 +696,30 @@ export const SuperAdminRoles: React.FC = () => {
                               {user.status ? "Active" : "Suspended"}
                             </span>
                           </div>
+                        </TableCell> */}
+                        <TableCell>
+                          <div className="flex items-center space-x-2">
+                            <Switch
+                              checked={user.accountStatus === "active"}
+                              onCheckedChange={() => handleSuspendUser(user.id)}
+                            />
+                            <span className="text-sm">
+                              {user.accountStatus === "active"
+                                ? "Active"
+                                : "Suspended"}
+                            </span>
+                          </div>
                         </TableCell>
                         <TableCell>
                           <div className="flex items-center space-x-2">
-                            <Button variant="ghost" size="sm">
+                            {/* <Button variant="ghost" size="sm">
+                              <Edit className="w-4 h-4" />
+                            </Button> */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditUser(user)}
+                            >
                               <Edit className="w-4 h-4" />
                             </Button>
 
@@ -792,37 +827,13 @@ export const SuperAdminRoles: React.FC = () => {
         </DialogContent>
       </Dialog>
 
-      {/* <Dialog
-        open={isManagePermissionsOpen}
-        onOpenChange={setIsManagePermissionsOpen}
-      >
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Manage Permissions - {selectedRole?.name}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            {allPermissions.map((permission) => (
-              <div key={permission.id} className="flex items-center space-x-3">
-                <Checkbox
-                  id={permission.id}
-                  checked={selectedRole?.permissions.includes(permission.id)}
-                  onCheckedChange={() => handlePermissionToggle(permission.id)}
-                />
-                <div className="flex items-center space-x-2">
-                  <permission.icon className="w-4 h-4 text-gray-600" />
-                  <Label htmlFor={permission.id}>{permission.label}</Label>
-                </div>
-              </div>
-            ))}
-            <Button
-              onClick={() => setIsManagePermissionsOpen(false)}
-              className="w-full bg-[#27AE60] hover:bg-[#1e8449]"
-            >
-              Save Changes
-            </Button>
-          </div>
-        </DialogContent>
-      </Dialog> */}
+      {/* Edit User Modal */}
+      <EditUserModal
+        isOpen={isEditUserOpen}
+        onClose={() => setIsEditUserOpen(false)}
+        user={selectedUser}
+        onSave={handleSaveUser}
+      />
 
       {/* Confirmation Modal */}
       {confirmAction && (
