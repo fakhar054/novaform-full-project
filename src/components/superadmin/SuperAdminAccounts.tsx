@@ -250,6 +250,7 @@ export const SuperAdminAccounts: React.FC = () => {
     }
 
     const userId = authData.user.id;
+    console.log("I am User id after creating user", userId);
 
     const { error: dbError } = await supabaseAdmin.from("users").insert({
       businessName: formData.businessName || null,
@@ -277,6 +278,7 @@ export const SuperAdminAccounts: React.FC = () => {
       sdi_code: formData.sdi_code || null,
       address: formData.address || null,
       cap: formData.cap || null,
+      user_id: userId,
     });
 
     if (dbError) {

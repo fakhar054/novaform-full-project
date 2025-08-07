@@ -1,30 +1,29 @@
-
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { CreditCard, Calendar, Plus, HeadphonesIcon } from 'lucide-react';
+import React from "react";
+import { useNavigate } from "react-router-dom";
+import { CreditCard, Calendar, Plus, HeadphonesIcon } from "lucide-react";
 
 export const DashboardOverview: React.FC = () => {
   const navigate = useNavigate();
 
   const handleBookSupport = () => {
-    navigate('/book-demo');
+    navigate("/book-demo");
   };
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
+        <h1 className="text-left text-2xl sm:text-3xl font-bold text-black mb-2">
           Welcome back, John!
         </h1>
-        <p className="text-gray-600">
+        <p className="text-left text-gray-600">
           Here's an overview of your NovaFarm account
         </p>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border p-6">
-          <div className="flex items-center justify-between mb-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+        <div className="bg-white rounded-lg shadow-sm border p-6 text-left">
+          <div className="flex items-center justify-between mb-4 ">
             <div className="w-12 h-12 bg-[#078147]/10 rounded-lg flex items-center justify-center">
               <CreditCard className="w-6 h-6 text-[#078147]" />
             </div>
@@ -40,9 +39,11 @@ export const DashboardOverview: React.FC = () => {
               <Calendar className="w-6 h-6 text-[#078147]" />
             </div>
           </div>
-          <h3 className="font-semibold text-black mb-1">Next Billing</h3>
-          <p className="text-2xl font-bold text-black mb-1">Jan 15</p>
-          <p className="text-sm text-gray-600">€199.00</p>
+          <h3 className="font-semibold text-black mb-1 text-left">
+            Next Billing
+          </h3>
+          <p className="text-2xl font-bold text-black mb-1 text-left">Jan 15</p>
+          <p className="text-sm text-gray-600 text-left">€199.00</p>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -51,15 +52,21 @@ export const DashboardOverview: React.FC = () => {
               <Plus className="w-6 h-6 text-[#078147]" />
             </div>
           </div>
-          <h3 className="font-semibold text-black mb-1">Active Add-ons</h3>
-          <p className="text-2xl font-bold text-black mb-1">3</p>
-          <p className="text-sm text-gray-600">SMS notifications, Analytics+</p>
+          <h3 className="font-semibold text-black mb-1 text-left">
+            Active Add-ons
+          </h3>
+          <p className="text-2xl font-bold text-black mb-1 text-left">3</p>
+          <p className="text-sm text-gray-600 text-left">
+            SMS notifications, Analytics+
+          </p>
         </div>
       </div>
 
       {/* Quick Actions */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-bold text-black mb-4">Quick Actions</h2>
+        <h2 className="text-xl font-bold text-black mb-4 text-left">
+          Quick Actions
+        </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <button
             onClick={handleBookSupport}
@@ -91,7 +98,9 @@ export const DashboardOverview: React.FC = () => {
 
       {/* Recent Activity */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-bold text-black mb-4">Recent Activity</h2>
+        <h2 className="text-xl font-bold text-black mb-4 text-left">
+          Recent Activity
+        </h2>
         <div className="space-y-4">
           <div className="flex items-center justify-between py-3 border-b last:border-b-0">
             <div>
@@ -102,14 +111,18 @@ export const DashboardOverview: React.FC = () => {
           </div>
           <div className="flex items-center justify-between py-3 border-b last:border-b-0">
             <div>
-              <p className="font-medium text-black">Profile updated</p>
+              <p className="font-medium text-black text-left">
+                Profile updated
+              </p>
               <p className="text-sm text-gray-600">Changed email address</p>
             </div>
             <span className="text-sm text-gray-500">1 week ago</span>
           </div>
           <div className="flex items-center justify-between py-3 border-b last:border-b-0">
             <div>
-              <p className="font-medium text-black">Add-on activated</p>
+              <p className="font-medium text-black text-left">
+                Add-on activated
+              </p>
               <p className="text-sm text-gray-600">SMS notifications enabled</p>
             </div>
             <span className="text-sm text-gray-500">2 weeks ago</span>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   LayoutDashboard,
   Users,
@@ -19,6 +19,10 @@ import { SuperAdminSubscriptionPlans } from "./SuperAdminSubscriptionPlans";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import "../../App.css";
+import { useUserContext } from "@/components/UserContext";
+import { supabase } from "@/integrations/supabase/client";
+import Spinner from "../Spinner";
+
 interface SuperAdminSidebarProps {
   activeSection: SuperAdminSection;
   onSectionChange: (section: SuperAdminSection) => void;
@@ -30,35 +34,141 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
 }) => {
   const navigate = useNavigate();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [permissions, setPermissions] = useState();
+  const [loadingPermissions, setLoadingPermissions] = useState(true);
+  const [role, setRole] = useState();
 
-  const menuItems = [
-    {
-      id: "dashboard" as SuperAdminSection,
-      label: "Dashboard",
-      icon: LayoutDashboard,
-    },
-    { id: "users" as SuperAdminSection, label: "Users", icon: Users },
-    {
+  useEffect(() => {
+    const storedRole = localStorage.getItem("role");
+    setRole(storedRole);
+  }, []);
+
+  console.log("Role from useContext api :", role);
+
+  useEffect(() => {
+    const fetchPermissions = async () => {
+      if (!role) {
+        setLoadingPermissions(false);
+        return;
+      }
+      const { data, error } = await supabase
+        .from("permissions")
+        .select("*")
+        .eq("role", role)
+        .maybeSingle();
+
+      if (error) {
+        console.error("Error fetching permissions:", error);
+      } else {
+        console.log("Permissions:", data);
+        setPermissions(data);
+      }
+      setLoadingPermissions(false);
+    };
+
+    fetchPermissions();
+  }, [role]);
+
+  if (role === undefined || loadingPermissions) {
+    return <Spinner />;
+  }
+
+  const menuItems: Array<any> = [];
+
+  menuItems.push({
+    id: "dashboard" as SuperAdminSection,
+    label: "Dashboard",
+    icon: LayoutDashboard,
+  });
+
+  if (permissions?.user_management || role === "super-admin") {
+    menuItems.push({
+      id: "users" as SuperAdminSection,
+      label: "Users",
+      icon: Users,
+    });
+  }
+
+  if (permissions?.payment_processing || role === "super-admin") {
+    menuItems.push({
       id: "payments" as SuperAdminSection,
       label: "Payments",
       icon: CreditCard,
-    },
-    { id: "accounts" as SuperAdminSection, label: "Accounts", icon: UserPlus },
-    { id: "invoices" as SuperAdminSection, label: "Invoices", icon: FileText },
-    {
-      id: "activity" as SuperAdminSection,
-      label: "Activity Logs",
-      icon: Activity,
-    },
-    {
-      id: "subscrption_plan" as SuperAdminSection,
-      label: "Subscription Plan",
-      icon: Package,
-    },
-    { id: "email" as SuperAdminSection, label: "Email", icon: Mail },
-    { id: "roles" as SuperAdminSection, label: "User Roles", icon: Shield },
-    { id: "settings" as SuperAdminSection, label: "Settings", icon: Settings },
-  ];
+    });
+  }
+
+  if (permissions?.billing_invoices || role === "super-admin") {
+    menuItems.push({
+      id: "invoices" as SuperAdminSection,
+      label: "Invoices",
+      icon: FileText,
+    });
+  }
+
+  if (permissions?.analytics_reports || role === "super-admin") {
+    menuItems.push({
+      id: "accounts" as SuperAdminSection,
+      label: "Accounts",
+      icon: UserPlus,
+    });
+  }
+  if (permissions?.system_settings || role === "super-admin") {
+    menuItems.push({
+      id: "settings" as SuperAdminSection,
+      label: "Settings",
+      icon: Settings,
+    });
+  }
+
+  menuItems.push({
+    id: "roles" as SuperAdminSection,
+    label: "User Roles",
+    icon: Shield,
+  });
+
+  menuItems.push({
+    id: "subscrption_plan" as SuperAdminSection,
+    label: "Subscription Plan",
+    icon: Package,
+  });
+
+  menuItems.push({
+    id: "email" as SuperAdminSection,
+    label: "Email",
+    icon: Mail,
+  });
+  // const menuItems = [
+  //   {
+  //     id: "dashboard" as SuperAdminSection,
+  //     label: "Dashboard",
+  //     icon: LayoutDashboard,
+  //   },
+  //   {
+  //     id: "users" as SuperAdminSection,
+  //     label: "Users",
+  //     icon: Users,
+  //   },
+  //   {
+  //     id: "payments" as SuperAdminSection,
+  //     label: "Payments",
+  //     icon: CreditCard,
+  //   },
+  //   { id: "accounts" as SuperAdminSection, label: "Accounts", icon: UserPlus },
+  //   { id: "invoices" as SuperAdminSection, label: "Invoices", icon: FileText },
+  //   {
+  //     id: "activity" as SuperAdminSection,
+  //     label: "Activity Logs",
+  //     icon: Activity,
+  //   },
+  //   {
+  //     id: "subscrption_plan" as SuperAdminSection,
+  //     label: "Subscription Plan",
+  //     icon: Package,
+  //   },
+  //   { id: "email" as SuperAdminSection, label: "Email", icon: Mail },
+  //   { id: "roles" as SuperAdminSection, label: "User Roles", icon: Shield },
+  //   { id: "settings" as SuperAdminSection, label: "Settings", icon: Settings },
+  // ];
 
   const handleLogout = () => {
     localStorage.removeItem("sb-ajbxscredobhqfksaqrk-auth-token");

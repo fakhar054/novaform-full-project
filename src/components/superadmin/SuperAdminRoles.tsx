@@ -88,12 +88,41 @@ const mockUsers: AdminUser[] = [
   },
 ];
 
+// const mockRoles: Role[] = [
+//   {
+//     id: "1",
+//     name: "Admin",
+//     description: "Full system access",
+//     permissions: ["users", "analytics"],
+//   },
+//   {
+//     id: "2",
+//     name: "Support Staff",
+//     description: "View clients, no payment actions",
+//     permissions: ["users", "analytics"],
+//   },
+//   {
+//     id: "3",
+//     name: "Billing",
+//     description: "Manage invoices only",
+//     permissions: ["payments", "billing"],
+//   },
+// ];
+
+// const allPermissions = [
+//   { id: "user_management", label: "User Management", icon: Users },
+//   { id: "payment_processing", label: "Payment Processing", icon: Shield },
+//   { id: "system_settings", label: "System Settings", icon: Settings },
+//   { id: "analytics_reports", label: "Analytics & Reports", icon: Eye },
+//   { id: "billing_invoices", label: "Billing & Invoices", icon: UserPlus },
+// ];
+
 const mockRoles: Role[] = [
   {
     id: "1",
     name: "Admin",
     description: "Full system access",
-    permissions: ["users", "analytics"],
+    permissions: ["users", "payments", "settings", "analytics", "billing"],
   },
   {
     id: "2",
@@ -146,23 +175,57 @@ export const SuperAdminRoles: React.FC = () => {
   });
 
   const permissionColumnMap: { [key: string]: string } = {
-    users: "user-management",
-    payments: "payment-processing",
-    settings: "system-settings",
-    analytics: "analytics-reports",
-    billing: "billing-invoices",
+    users: "user_management",
+    payments: "payment_processing",
+    settings: "system_settings",
+    analytics: "analytics_reports",
+    billing: "billing_invoices",
   };
 
   const [isEditUserOpen, setIsEditUserOpen] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
 
+  // const fetchPermissionsForRoles = async () => {
+  //   const updatedRoles = await Promise.all(
+  //     mockRoles.map(async (role) => {
+  //       const { data, error } = await supabase
+  //         .from("permissions")
+  //         .select("*")
+  //         .eq("role", role.name)
+  //         .single();
+
+  //       if (error || !data) {
+  //         console.warn(`No permissions found for role: ${role.name}`);
+  //         return role;
+  //       }
+
+  //       const selectedPermissions: string[] = [];
+
+  //       for (const [key, value] of Object.entries(data)) {
+  //         const match = Object.entries(permissionColumnMap).find(
+  //           ([permKey, column]) => column === key && value === true
+  //         );
+  //         if (match) selectedPermissions.push(match[0]);
+  //       }
+
+  //       return {
+  //         ...role,
+  //         permissions: selectedPermissions,
+  //       };
+  //     })
+  //   );
+
+  //   setRoles(updatedRoles);
+  // };
+
   const fetchPermissionsForRoles = async () => {
     const updatedRoles = await Promise.all(
       mockRoles.map(async (role) => {
+        const dbRole = roleNameToDb(role.name); // Use the mapping here!
         const { data, error } = await supabase
           .from("permissions")
           .select("*")
-          .eq("role", role.name)
+          .eq("role", dbRole)
           .single();
 
         if (error || !data) {
@@ -171,7 +234,6 @@ export const SuperAdminRoles: React.FC = () => {
         }
 
         const selectedPermissions: string[] = [];
-
         for (const [key, value] of Object.entries(data)) {
           const match = Object.entries(permissionColumnMap).find(
             ([permKey, column]) => column === key && value === true
@@ -193,7 +255,7 @@ export const SuperAdminRoles: React.FC = () => {
     const { data, error } = await supabase
       .from("users")
       .select("*")
-      .in("role", ["support-staff", "billing", "admin"])
+      .in("role", ["staff", "billing", "admin"])
       .order("created_at", { ascending: false });
 
     if (error) {
@@ -296,8 +358,7 @@ export const SuperAdminRoles: React.FC = () => {
             lastName,
             email,
             password,
-            role,
-            // status: "active",
+            role: roleNameToDb(role),
           }),
         }
       );
@@ -308,6 +369,7 @@ export const SuperAdminRoles: React.FC = () => {
         console.log("✅ User added successfully:", result);
         setIsAddUserOpen(false);
         toast.success("User added successfully");
+        fetchUsers();
       } else {
         console.error("❌ Error:", result.error || result.message);
       }
@@ -316,95 +378,66 @@ export const SuperAdminRoles: React.FC = () => {
     }
   };
 
-  // try {
-  //   const {
-  //     data: { session },
-  //     error: sessionError,
-  //   } = await supabase.auth.getSession();
-
-  //   if (sessionError || !session?.access_token) {
-  //     console.error("No valid session found.");
-  //     alert("Unauthorized: Please log in as Super Admin.");
-  //     return;
-  //   }
-
-  //   const res = await fetch(
-  //     "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/add-user-with-role",
-  //     {
-  //       method: "POST",
-  //       headers: {
-  //         "Content-Type": "application/json",
-  //         Authorization: `Bearer ${session.access_token}`,
-  //       },
-  //       body: JSON.stringify({
-  //         email,
-  //         password,
-  //         name: fullName,
-  //         role,
-  //         status: true,
-  //       }),
-  //     }
-  //   );
-
-  //   const result = await res.json();
-
-  //   if (res.ok) {
-  //     toast.success("User created!");
-  //     setUsers((prev) => [...prev, { name: fullName, email, role }]);
-  //     setNewUser({
-  //       firstName: "",
-  //       lastName: "",
-  //       email: "",
-  //       role: "",
-  //       password: "",
-  //     });
-  //     setIsAddUserOpen(false);
-  //   } else {
-  //     const errorMessage =
-  //       typeof result?.error === "string"
-  //         ? result.error
-  //         : result?.error?.message || "Unknown error occurred";
-
-  //     console.error("Error:", errorMessage);
-  //     toast.success("Failed to create user");
-  //     // alert("Failed to create user: " + errorMessage);
-  //   }
-  // } catch (err) {
-  //   console.error("Network or server error:", err);
-  //   alert("Failed to create user: Network or server error.");
-  // }
-
-  const handleSuspendUser = (userId: string) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId
-          ? {
-              ...user,
-              status:
-                user.status === "Active"
-                  ? "Suspended"
-                  : ("Active" as "Active" | "Suspended"),
-            }
-          : user
+  const handleSuspendUser = async (userId, newStatus) => {
+    set_all_users((prev) =>
+      prev.map((user) =>
+        user.id === userId ? { ...user, accountStatus: newStatus } : user
       )
     );
+
+    const { data, error } = await supabase
+      .from("users")
+      .update({ accountStatus: newStatus })
+      .eq("id", userId);
+
+    if (error) {
+      console.error("Error updating user status:", error.message);
+      return;
+    }
   };
 
   const handleDeleteUser = (userId: string) => {
     setUsers(users.filter((user) => user.id !== userId));
   };
 
-  // const handleManagePermissions = (role: Role) => {
-  //   setSelectedRole(role);
-  //   setIsManagePermissionsOpen(true);
+  // const handleManagePermissions = async (role: Role) => {
+  //   try {
+  //     const { data, error } = await supabase
+  //       .from("permissions")
+  //       .select("*")
+  //       .eq("role", role.name)
+  //       .single();
+
+  //     if (error) {
+  //       console.error("Error fetching permissions:", error.message);
+  //     }
+  //     const selectedPermissions: string[] = [];
+  //     if (data) {
+  //       for (const [key, value] of Object.entries(data)) {
+  //         const match = Object.entries(permissionColumnMap).find(
+  //           ([permKey, column]) => column === key && value === true
+  //         );
+  //         if (match) selectedPermissions.push(match[0]);
+  //       }
+  //     }
+  //     setSelectedRole({
+  //       ...role,
+  //       permissions: selectedPermissions,
+  //     });
+
+  //     setIsManagePermissionsOpen(true);
+  //   } catch (err) {
+  //     console.error("Unexpected error fetching permissions:", err);
+  //   }
   // };
 
   const handleManagePermissions = async (role: Role) => {
     try {
+      const dbRole = roleNameToDb(role.name);
       const { data, error } = await supabase
         .from("permissions")
         .select("*")
-        .eq("role", role.name)
+        .eq("role", dbRole)
         .single();
 
       if (error) {
@@ -453,27 +486,75 @@ export const SuperAdminRoles: React.FC = () => {
     );
   };
 
+  const roleNameToDb = (role: string) => {
+    switch (role.toLowerCase()) {
+      case "admin":
+        return "admin";
+      case "support staff":
+        return "staff";
+      case "billing":
+        return "billing";
+      default:
+        return role.toLowerCase().replace(/\s+/g, "_");
+    }
+  };
+
+  // const handleSave_permissions = async () => {
+  //   if (!selectedRole) return;
+
+  //   // Build the payload for upsert
+  //   const payload: { [key: string]: boolean | string } = {
+  //     role: roleNameToDb(selectedRole.name),
+  //   };
+
+  //   // Set all permissions to false first
+  //   Object.entries(permissionColumnMap).forEach(([permKey, column]) => {
+  //     payload[column] = false;
+  //   });
+
+  //   // Set selected permissions to true
+  //   selectedRole.permissions.forEach((perm) => {
+  //     const column = permissionColumnMap[perm];
+  //     if (column) payload[column] = true;
+  //   });
+
+  //   // Upsert to Supabase
+  //   const { error } = await supabase
+  //     .from("permissions")
+  //     .upsert([payload], { onConflict: "role" });
+
+  //   if (error) {
+  //     toast.error("Error saving permissions: " + error.message);
+  //     return;
+  //   }
+
+  //   // Update roles in UI
+  //   setRoles((prevRoles) =>
+  //     prevRoles.map((role) =>
+  //       role.name === selectedRole.name
+  //         ? { ...role, permissions: selectedRole.permissions }
+  //         : role
+  //     )
+  //   );
+
+  //   toast.success("Permissions saved successfully!");
+  //   setIsManagePermissionsOpen(false);
+  // };
+
   const handleSave_permissions = async () => {
     if (!selectedRole) return;
 
     const payload: { [key: string]: boolean | string } = {
-      role: selectedRole.name,
+      role: roleNameToDb(selectedRole.name),
     };
 
-    // First set all permission columns to false
-    allPermissions.forEach(({ id }) => {
-      const column = permissionColumnMap[id];
-      if (column) {
-        payload[column] = false;
-      }
+    Object.entries(permissionColumnMap).forEach(([permKey, column]) => {
+      payload[column] = false;
     });
 
-    // Now override with true for selected permissions
     selectedRole.permissions.forEach((perm) => {
       const column = permissionColumnMap[perm];
-      if (column) {
-        payload[column] = true;
-      }
+      if (column) payload[column] = true;
     });
 
     const { error } = await supabase
@@ -481,13 +562,15 @@ export const SuperAdminRoles: React.FC = () => {
       .upsert([payload], { onConflict: "role" });
 
     if (error) {
-      console.error(" Error saving permissions:", error.message);
-      alert("Error saving permissions. Please try again.");
-    } else {
-      console.log("Permissions saved to Supabase:", payload);
-      toast.success("Permissions saved successfully!");
-      setIsManagePermissionsOpen(false);
+      toast.error("Error saving permissions: " + error.message);
+      return;
     }
+
+    // Fetch updated permissions from Supabase
+    await fetchPermissionsForRoles();
+
+    toast.success("Permissions saved successfully!");
+    setIsManagePermissionsOpen(false);
   };
 
   const handlePermissionToggle = (permissionId: string) => {
@@ -512,11 +595,11 @@ export const SuperAdminRoles: React.FC = () => {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case "Super Admin":
+      case "admin":
         return "bg-red-100 text-red-800";
-      case "Support Staff":
+      case "staff":
         return "bg-blue-100 text-blue-800";
-      case "Billing":
+      case "billing":
         return "bg-green-100 text-green-800";
       default:
         return "bg-gray-100 text-gray-800";
@@ -686,22 +769,16 @@ export const SuperAdminRoles: React.FC = () => {
                         <TableCell className="hidden md:table-cell text-sm text-gray-600">
                           {formatCreatedAt(user.last_login)}
                         </TableCell>
-                        {/* <TableCell>
-                          <div className="flex items-center space-x-2">
-                            <Switch
-                              checked={user.status}
-                              onCheckedChange={() => handleSuspendUser(user.id)}
-                            />
-                            <span className="text-sm">
-                              {user.status ? "Active" : "Suspended"}
-                            </span>
-                          </div>
-                        </TableCell> */}
                         <TableCell>
                           <div className="flex items-center space-x-2">
                             <Switch
                               checked={user.accountStatus === "active"}
-                              onCheckedChange={() => handleSuspendUser(user.id)}
+                              onCheckedChange={(checked) =>
+                                handleSuspendUser(
+                                  user.id,
+                                  checked ? "active" : "suspended"
+                                )
+                              }
                             />
                             <span className="text-sm">
                               {user.accountStatus === "active"
@@ -755,7 +832,9 @@ export const SuperAdminRoles: React.FC = () => {
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div>
-                      <CardTitle className="text-lg">{role.name}</CardTitle>
+                      <CardTitle className="text-lg text-left">
+                        {role.name}
+                      </CardTitle>
                       <p className="text-sm text-gray-600">
                         {role.description}
                       </p>

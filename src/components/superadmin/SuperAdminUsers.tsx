@@ -308,6 +308,26 @@ export const SuperAdminUsers: React.FC = () => {
     );
   }
 
+  const fmtDateTime = new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+    timeZone: "Europe/Rome",
+  });
+
+  const formatCreatedAt = (iso?: string) =>
+    iso
+      ? fmtDateTime
+          .format(new Date(iso))
+          .replaceAll("/", "-")
+          .replace(",", "")
+          .replace(/\s+/, " ")
+          .trim()
+      : "";
+
   // Loading state
   if (loading) {
     return (
@@ -425,22 +445,24 @@ export const SuperAdminUsers: React.FC = () => {
                         >
                           <TableCell>
                             <div>
-                              <div className="font-medium text-gray-900">
+                              <div className="font-medium text-gray-900 text-left">
                                 {user.businessName}
                               </div>
-                              <div className="text-sm text-gray-500">
+                              <div className="text-sm text-gray-500 text-left">
                                 {user.email}
                               </div>
                             </div>
                           </TableCell>
-                          <TableCell>
+                          <TableCell className="text-left">
                             {getStatusBadge(user.accountStatus)}
                           </TableCell>
-                          <TableCell>{getPlanBadge(user.plan)}</TableCell>
-                          <TableCell className="text-sm text-gray-500">
-                            {user.lastLogin}
+                          <TableCell className="text-left">
+                            {getPlanBadge(user.plan)}
                           </TableCell>
-                          <TableCell className="text-sm text-gray-500">
+                          <TableCell className="text-sm text-gray-500 text-left">
+                            {formatCreatedAt(user.last_login)}
+                          </TableCell>
+                          <TableCell className="text-sm text-gray-500  text-left">
                             {user.city}, {user.country}
                           </TableCell>
                           <TableCell className="text-right">

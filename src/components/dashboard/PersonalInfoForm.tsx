@@ -41,14 +41,14 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
 
   return (
     <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h2 className="text-xl font-bold text-black mb-6">
-        Personal Information
+      <h2 className="text-xl font-bold text-black mb-6 text-left">
+        Referent Details
       </h2>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            First Name
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+            Nome <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -60,8 +60,8 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Last Name
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+            Cognome <span className="text-red-500">*</span>
           </label>
           <input
             type="text"
@@ -73,8 +73,8 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Email Address
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+            Email Personale <span className="text-red-500">*</span>
           </label>
           <input
             type="email"
@@ -86,8 +86,8 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Phone Number
+          <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+            Numero di Telefono <span className="text-red-500">*</span>
           </label>
           <input
             type="tel"
@@ -98,7 +98,7 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
           />
         </div>
 
-        <div className="md:col-span-2">
+        {/* <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">
             Language Preference
           </label>
@@ -111,7 +111,7 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
             <option value="EN">English</option>
             <option value="IT">Italiano</option>
           </select>
-        </div>
+        </div> */}
       </div>
 
       <div className="mt-6 flex justify-end">

@@ -90,6 +90,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
 
   const [logins, setLogins] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [emails, setEmails] = useState([]);
 
   const fetchLoginData = async () => {
     setLoading(true);
@@ -101,6 +102,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
     if (error) {
       console.error("Error fetching login data:", error.message);
     } else {
+      setEmails(data.map((item) => item.email));
       setLogins(data);
       setLoading(false);
     }
@@ -114,6 +116,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
 
   useEffect(() => {
     console.log("Data from Realtionship table", logins);
+    console.log("email from activity table", emails);
   });
 
   const filteredLogs = logins.filter((log) => {
@@ -133,21 +136,6 @@ export const SuperAdminActivityLogs: React.FC = () => {
 
     return matchesSearch && matchesAction && matchesRisk;
   });
-  // const filteredLogs = logins.filter((log) => {
-  //   const user = log.users;
-  //   const matchesSearch =
-  //     user?.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     user?.businessName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-  //     log?.description?.toLowerCase().includes(searchTerm.toLowerCase());
-
-  //   const matchesAction =
-  //     actionFilter === "all" ||
-  //     log?.action_type?.toLowerCase().includes(actionFilter.toLowerCase());
-
-  //   const matchesRisk = riskFilter === "all" || log.risk === riskFilter;
-
-  //   return matchesSearch && matchesAction && matchesRisk;
-  // });
 
   const fmtDateOnly = new Intl.DateTimeFormat("en-GB", {
     day: "2-digit",
@@ -226,7 +214,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Total Activities</p>
-                <p className="text-2xl font-bold text-gray-900">
+                <p className="text-2xl font-bold text-gray-900 text-left">
                   {logins.length}
                 </p>
               </div>
@@ -242,7 +230,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">High Risk</p>
-                <p className="text-2xl font-bold text-red-600">
+                <p className="text-2xl font-bold text-red-600 text-left">
                   {activityData.filter((log) => log.risk === "high").length}
                 </p>
               </div>
@@ -258,7 +246,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Failed Logins</p>
-                <p className="text-2xl font-bold text-yellow-600">
+                <p className="text-2xl font-bold text-yellow-600 text-left">
                   {
                     activityData.filter((log) => log.action === "Failed Login")
                       .length
@@ -277,7 +265,7 @@ export const SuperAdminActivityLogs: React.FC = () => {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Today</p>
-                <p className="text-2xl font-bold text-[#1C9B7A]">
+                <p className="text-2xl font-bold text-[#1C9B7A] text-left">
                   {
                     activityData.filter((log) =>
                       log.timestamp.startsWith("2024-01-15")
@@ -360,9 +348,9 @@ export const SuperAdminActivityLogs: React.FC = () => {
                   <TableHead className="font-semibold text-gray-900">
                     Location
                   </TableHead>
-                  <TableHead className="font-semibold text-gray-900">
+                  {/* <TableHead className="font-semibold text-gray-900">
                     Risk
-                  </TableHead>
+                  </TableHead> */}
                   <TableHead className="font-semibold text-gray-900">
                     Timestamp
                   </TableHead>
@@ -377,28 +365,31 @@ export const SuperAdminActivityLogs: React.FC = () => {
                   >
                     <TableCell>
                       <div>
-                        <div className="font-medium text-gray-900">
+                        <div className="font-medium text-gray-900 text-left">
                           {log.username}
                         </div>
-                        <div className="text-sm text-gray-500">{log.email}</div>
+                        <div className="text-sm text-gray-500  text-left">
+                          {log.email}
+                        </div>
                       </div>
                     </TableCell>
-                    <TableCell>{getActionBadge(log.action_type)}</TableCell>
-                    <TableCell className="text-sm text-gray-600">
+                    <TableCell className="text-left">
+                      {getActionBadge(log.action_type)}
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600 text-left">
                       {/* You can use a description field if you have one, or a static message */}
                       User LoggedIn successfully
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center text-sm text-gray-500">
-                        <MapPin className="w-3 h-3 mr-1" />
+                        <MapPin className="w-3 h-3 mr-1 text-left" />
                         <div>
-                          <div>{log.location}</div>
-                          {/* If you want to show IP address, add it to your logs and use log.ipAddress */}
+                          <div className="text-left">{log.location}</div>
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>{getRiskBadge(log.risk)}</TableCell>
-                    <TableCell className="text-sm text-gray-500 whitespace-nowrap">
+                    {/* <TableCell>{getRiskBadge(log.risk)}</TableCell> */}
+                    <TableCell className="text-sm text-gray-500 whitespace-nowrap text-left">
                       {formatCreatedAt(log.created_at)}
                     </TableCell>
                   </TableRow>

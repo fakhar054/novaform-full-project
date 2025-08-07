@@ -20,77 +20,6 @@ const Login = () => {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
-  // const updateLastLogin = async () => {
-  //   const {
-  //     data: { user },
-  //     error: userError,
-  //   } = await supabase.auth.getUser();
-
-  //   if (userError || !user) {
-  //     console.error("User not found:", userError);
-  //     return;
-  //   }
-
-  //   const { error: updateError } = await (supabase as any)
-  //     .from("users")
-  //     .update({ lastLogin: new Date().toISOString() })
-  //     .eq("id", user.id);
-
-  //   if (updateError) {
-  //     console.error("Failed to update last login:", updateError.message);
-  //   } else {
-  //     console.log("Last login time updated!");
-  //   }
-  // };
-
-  // const handleSubmit = async (e: React.FormEvent) => {
-  //   e.preventDefault();
-  //   const newErrors = { email: "", password: "" };
-  //   if (!email) {
-  //     newErrors.email = "Email is required";
-  //   } else if (!/\S+@\S+\.\S+/.test(email)) {
-  //     newErrors.email = "Please enter a valid email";
-  //   }
-  //   if (!password) {
-  //     newErrors.password = "Password is required";
-  //   } else if (password.length < 6) {
-  //     newErrors.password = "Password must be at least 6 characters";
-  //   }
-  //   setErrors(newErrors);
-  //   if (newErrors.email || newErrors.password) return;
-  //   try {
-  //     setLoading(true);
-  //     const { data: loginData, error: loginError } =
-  //       await supabase.auth.signInWithPassword({
-  //         email,
-  //         password,
-  //       });
-
-  //     if (loginData?.session) {
-  //       toast.success("Welcome back!");
-  //       console.log("User logged in:", loginData.user);
-  //       // await updateLastLogin();
-  //       await logActivity(
-  //         loginData.user.id || null,
-  //         loginData.user.email || null,
-  //         "login"
-  //       );
-  //       navigate("/dashboard");
-
-  //       return;
-  //     }
-
-  //     if (loginError) {
-  //       alert(loginError.message);
-  //     }
-  //   } catch (err) {
-  //     alert("Unexpected error. Please try again.");
-  //     console.error(err);
-  //   } finally {
-  //     setLoading(false);
-  //   }
-  // };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -107,13 +36,11 @@ const Login = () => {
     } else if (password.length < 6) {
       newErrors.password = "Password must be at least 6 characters";
     }
-
     setErrors(newErrors);
     if (newErrors.email || newErrors.password) return;
 
     try {
       setLoading(true);
-
       const { data: loginData, error: loginError } =
         await supabase.auth.signInWithPassword({
           email,
@@ -126,10 +53,32 @@ const Login = () => {
 
       if (loginData?.user) {
         user_id = loginData.user.id;
+        const userEmail = loginData.user.email;
+
+        const { data: userData, error: userFetchError } = await supabase
+          .from("users")
+          .select("firstName,lastName")
+          .eq("email", userEmail)
+          .single();
+        const username = `${userData.firstName} ${userData.lastName}`;
+        const userId = userData.id;
+        await logActivity({
+          userId,
+          username,
+          email: userEmail,
+          actionType: "login",
+          location: "dashboard",
+          risk: "low",
+        });
+
         toast.success("Welcome back!");
         console.log("User logged in:", loginData.user);
 
-        await logActivity(user_id, email, actionType); // success
+        await supabase
+          .from("users")
+          .update({ last_login: new Date().toISOString() })
+          .eq("email", userEmail);
+
         navigate("/dashboard");
         return;
       }
@@ -149,7 +98,7 @@ const Login = () => {
           user_id = userRow.user_id;
         }
 
-        await logActivity(user_id, email, actionType); // failed
+        await logActivity(user_id, email, actionType);
         alert(loginError.message);
       }
     } catch (err) {

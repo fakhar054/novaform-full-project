@@ -16,7 +16,7 @@ export const AccountSettings: React.FC = () => {
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [userData, setUserData] = useState();
 
-  console.log("user Data", userData);
+  // console.log("user Data", userData);
 
   const [userLoading, setUserLoading] = useState(null);
 
@@ -31,6 +31,9 @@ export const AccountSettings: React.FC = () => {
   const [companyData, setCompanyData] = useState({
     companyName: "",
     vatNumber: "",
+    taxCode: "",
+    sdi_code: "",
+    pec_email: "",
   });
 
   const [billingData, setBillingData] = useState({
@@ -93,7 +96,7 @@ export const AccountSettings: React.FC = () => {
     if (error) {
       console.error("Data fetch error:", error.message);
     } else {
-      // console.log("data fetched from ", data);
+      // console.log("data fetched from  Account Setting", data);
       setUserData(data);
       setPersonalData({
         firstName: data.firstName || "",
@@ -105,7 +108,10 @@ export const AccountSettings: React.FC = () => {
 
       setCompanyData({
         companyName: data.companyName || "",
-        vatNumber: data.vatNumber,
+        vatNumber: data.vatNumber || "",
+        taxCode: data.tax_code || "",
+        sdi_code: data.sdi_code || "",
+        pec_email: data.billingEmail || "",
       });
 
       setBillingData({
@@ -122,55 +128,6 @@ export const AccountSettings: React.FC = () => {
   useEffect(() => {
     fetchUserData();
   }, []);
-
-  // const handleSavePersonalInfo = async (data: typeof personalData) => {
-  //   // console.log("Personal data", data);
-  //   setLoadingPersonal(true);
-  //   // setIsLoading(true);
-  //   setMessage(null);
-
-  //   const {
-  //     data: { user },
-  //     error: userError,
-  //   } = await supabase.auth.getUser();
-
-  //   if (userError || !user) {
-  //     setMessage({ type: "error", text: "User not found or auth error" });
-  //     setLoadingPersonal(false);
-  //     return;
-  //   }
-  //   const { error } = await (supabase as any)
-  //     .from("users")
-  //     .select("*")
-  //     .eq("uuid", user.id)
-  //     .single();
-
-  //   if (error) {
-  //     console.error("Update failed:", error.message);
-  //     setMessage({ type: "error", text: "Failed to update user info" });
-  //   } else {
-  //     setMessage({
-  //       type: "success",
-  //       text: "Personal info updated successfully!",
-  //     });
-  //     toast("information updated successfully!");
-
-  //     setPersonalData(data);
-  //   }
-
-  //   setLoadingPersonal(false);
-
-  //   setTimeout(() => {
-  //     setPersonalData(data);
-  //     setLoadingPersonal(false);
-  //     // setIsLoading(false);
-  //     setMessage({
-  //       type: "success",
-  //       text: "Personal information updated successfully!",
-  //     });
-  //     setTimeout(() => setMessage(null), 3000);
-  //   }, 1000);
-  // };
 
   const handleSavePersonalInfo = async (data: typeof personalData) => {
     setLoadingPersonal(true);
@@ -218,7 +175,6 @@ export const AccountSettings: React.FC = () => {
   const handleSaveCompanyInfo = async (data: typeof companyData) => {
     setLoadingCompany(true);
     setMessage(null);
-
     const {
       data: { user },
       error: userError,
@@ -238,6 +194,8 @@ export const AccountSettings: React.FC = () => {
       .update({
         companyName: data.companyName,
         vatNumber: data.vatNumber,
+        sdi_code: data.sdi_code,
+        billingEmail: data.pec_email,
       })
       .eq("email", user.email);
 
@@ -258,9 +216,8 @@ export const AccountSettings: React.FC = () => {
   };
 
   const handleSaveBillingAddress = async (data: typeof billingData) => {
-    console.log("Billing Information", data);
+    // console.log("Billing Information", data);
     setLoadingBilling(true);
-    // setIsLoading(true);
     setMessage(null);
 
     const {
@@ -286,10 +243,10 @@ export const AccountSettings: React.FC = () => {
         country: data.country,
         zipCode: data.zipCode,
       })
-      .eq("uuid", user.id);
+      .eq("email", user.email);
 
     if (error) {
-      console.error("Update failed in company", error.message);
+      console.error("Update failed in biling", error.message);
       setMessage({ type: "error", text: "Failed to update company info" });
     } else {
       setMessage({
@@ -311,7 +268,7 @@ export const AccountSettings: React.FC = () => {
         text: "Billing address updated successfully!",
       });
       setTimeout(() => setMessage(null), 3000);
-    }, 1000);
+    }, 3000);
   };
 
   // 2FA handlers
@@ -343,14 +300,52 @@ export const AccountSettings: React.FC = () => {
     }, 1000);
   };
 
-  const handleChangePassword = async () => {
+  //code for change passwore
+  const user = supabase.auth.getUser();
+  const handleChangePassword = async (e) => {
+    e.preventDefault();
+
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       setMessage({ type: "error", text: "New passwords do not match" });
       return;
     }
 
-    setIsLoading(true);
-    setMessage(null);
+    const { data: userData, error: userError } = await supabase.auth.getUser();
+    if (userError || !userData?.user?.email) {
+      setIsLoading(false);
+      return;
+    }
+    const email = userData.user.email;
+    // 2. Re-authenticate with old password
+    const { error: signInError } = await supabase.auth.signInWithPassword({
+      email,
+      password: passwordData.currentPassword,
+    });
+
+    if (signInError) {
+      toast.error("Old password is incorrect.");
+      console.log("Old password is incorrect.");
+      setIsLoading(false);
+      return;
+    }
+
+    // 3. Update to new password
+    const { error } = await supabase.auth.updateUser({
+      password: passwordData.newPassword,
+    });
+    setIsLoading(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success("Password updated successfully!");
+      // console.log("Password updated successfully!");
+      passwordData.currentPassword = "";
+      passwordData.newPassword = "";
+      passwordData.confirmPassword = "";
+    }
+
+    // setIsLoading(true);
+    // setMessage(null);
 
     // Simulate API call
     setTimeout(() => {
@@ -369,10 +364,10 @@ export const AccountSettings: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2 text-left">
           Account Settings
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-left">
           Manage your personal information and preferences
         </p>
       </div>
@@ -412,18 +407,20 @@ export const AccountSettings: React.FC = () => {
 
       {/* Security Settings */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-bold text-black mb-6">Security Settings</h2>
+        <h2 className="text-xl font-bold text-black mb-6 text-left">
+          Security Settings
+        </h2>
 
         {/* Two-Factor Authentication */}
         <div className="space-y-4 mb-8">
-          {/* <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-3">
               <Shield className="w-5 h-5 text-gray-600" />
               <div>
-                <h3 className="font-semibold text-gray-900">
+                <h3 className="font-semibold text-gray-900 text-left">
                   Two-Factor Authentication
                 </h3>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 text-left">
                   Add an extra layer of security to your account
                 </p>
               </div>
@@ -433,11 +430,11 @@ export const AccountSettings: React.FC = () => {
               onCheckedChange={handleTwoFactorToggle}
               className="data-[state=checked]:bg-green-600"
             />
-          </div> */}
+          </div>
 
           {twoFactorEnabled && (
             <div className="ml-8 p-3 bg-green-50 rounded-lg">
-              <p className="text-sm text-green-800">
+              <p className="text-sm text-green-800 text-left">
                 ✓ Two-factor authentication is enabled. You'll receive a
                 verification code via email when signing in.
               </p>
@@ -446,17 +443,19 @@ export const AccountSettings: React.FC = () => {
         </div>
 
         {/* Password Section */}
-        <div className="border-t pt-6">
-          <h3 className="text-lg font-semibold text-black mb-4">Password</h3>
+        <div className="border-t pt-6 text-left">
+          <h3 className="text-lg font-semibold text-black mb-4 text-left">
+            Password
+          </h3>
 
           {!showPasswordForm ? (
             <div>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-600 mb-4 text-left">
                 Keep your account secure with a strong password
               </p>
               <button
                 onClick={() => setShowPasswordForm(true)}
-                className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors"
+                className="bg-gray-100 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-200 transition-colors "
               >
                 Change Password
               </button>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Plus, Save, X, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +17,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { toast } from "sonner";
 import supabaseAdmin from "@/integrations/supabase/superadmin";
+import { supabase } from "@/integrations/supabase/client";
 
 // Define the type for your form data
 export interface AccountFormData {
@@ -36,7 +37,7 @@ export interface AccountFormData {
   zipCode: string;
   province: string;
   country: string;
-  password?: string; // Optional password
+  password?: string;
   plan: string;
   accountStatus: boolean;
   sendOnboardingEmail: boolean;
@@ -52,6 +53,30 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
   onCancel,
 }) => {
   const [showPassword, setShowPassword] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [plan_id, set_plan_id] = useState();
+  const [price, setPrice] = useState();
+
+  useEffect(() => {
+    const fetchPlans = async () => {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from("subscription_plan")
+        .select("*");
+      if (error) {
+        console.log("The error while fetch plans in form :", error);
+        setPlans([]);
+      } else {
+        setPlans(data);
+      }
+      setLoading(false);
+    };
+    fetchPlans();
+  }, []);
+
+  console.log("Data coming in Plans", plans);
+
   const [formData, setFormData] = useState({
     // General Info
     businessName: "",
@@ -86,7 +111,8 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
 
     // Account Access & Subscription
     password: "",
-    plan: "standard",
+    plan: "",
+    billing_type: "",
     accountStatus: true,
     sendOnboardingEmail: true,
   });
@@ -747,20 +773,56 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             <div className="space-y-2">
               <Label htmlFor="plan">Subscription Plan *</Label>
+
               <Select
                 value={formData.plan}
-                onValueChange={(value) => handleInputChange("plan", value)}
+                onValueChange={(value) => {
+                  console.log("value from select ", value);
+                  const selectedPlan = plans.find((p) => p.plan_name === value);
+
+                  if (selectedPlan) {
+                    setFormData((prev) => ({
+                      ...prev,
+                      plan: selectedPlan.plan_name,
+                    }));
+
+                    set_plan_id(selectedPlan.id);
+                  }
+                  console.log("Selected Plan id:: ", plan_id);
+                }}
               >
                 <SelectTrigger>
-                  <SelectValue />
+                  <SelectValue placeholder="Select a plan" />
+                </SelectTrigger>
+
+                <SelectContent>
+                  {plans.map((plan) => (
+                    <SelectItem key={plan.id} value={plan.plan_name}>
+                      {plan.plan_name.trim()}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="plan">Billing Plan Type</Label>
+              <Select
+                value={formData.billing_type}
+                onValueChange={(value) => {
+                  handleInputChange("billing_type", value);
+                  console.log("selected type: ", value);
+                }}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Select Type" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="basic">Basic - €49/month</SelectItem>
-                  <SelectItem value="standard">Standard - €99/month</SelectItem>
-                  <SelectItem value="premium">Premium - €199/month</SelectItem>
+                  <SelectItem value="monthly">Monthly </SelectItem>
+                  <SelectItem value="yealry">Yearly </SelectItem>
                 </SelectContent>
               </Select>
             </div>

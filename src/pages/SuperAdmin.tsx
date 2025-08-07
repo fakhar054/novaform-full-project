@@ -13,6 +13,8 @@ import { SubscriptionPlan } from "./SubscriptionPlan";
 import AllPlans from "./AllPlans";
 import { SuperAdminSubscriptionPlans } from "@/components/superadmin/SuperAdminSubscriptionPlans";
 
+import { useUserContext } from "@/components/UserContext";
+
 export type SuperAdminSection =
   | "dashboard"
   | "users"
@@ -29,6 +31,9 @@ export type SuperAdminSection =
 const SuperAdmin: React.FC = () => {
   const [activeSection, setActiveSection] =
     useState<SuperAdminSection>("dashboard");
+
+  const { role, setRole } = useUserContext();
+  console.log("Role from useContext api :", role);
 
   const renderContent = () => {
     switch (activeSection) {

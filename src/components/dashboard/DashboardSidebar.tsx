@@ -48,6 +48,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
   const handleLogout = () => {
     localStorage.removeItem("sb-ajbxscredobhqfksaqrk-auth-token");
+    localStorage.removeItem("role");
     navigate("/");
     toast.success("Logout");
     console.log("Logout");

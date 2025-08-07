@@ -366,9 +366,9 @@ export const SuperAdminSettings: React.FC = () => {
     console.log("Favicon uploaded at:", urlData.publicUrl);
   };
 
-  if (loading_data) {
-    return <h1>Wait loading</h1>;
-  }
+  // if (loading_data) {
+  //   return <h1>Wait loading</h1>;
+  // }
 
   return (
     <div className="space-y-6">

@@ -17,6 +17,11 @@ export const SubscriptionBilling: React.FC = () => {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
 
+  const [billingType, setBillingType] = useState<"monthly" | "yearly">(
+    "monthly"
+  );
+  const [subscription_plans, set_subscription_Plans] = useState([]);
+
   const [monthlyPlans, setMonthlyPlans] = useState([]);
   const [yearlyPlans, setYearlyPlans] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -26,38 +31,45 @@ export const SubscriptionBilling: React.FC = () => {
     const { data, error } = await supabase
       .from("subscription_plan")
       .select("*");
+    // .eq("status", true); // Only active plans
 
     if (error) {
       console.error("Error fetching plans:", error.message);
     } else {
+      // Split into monthly and yearly
       const monthly = [];
       const yearly = [];
-      data.forEach((row) => {
-        if (row.monthly_plan_name && row.price_monthly) {
+      data.forEach((plan) => {
+        if (plan.price_monthly && plan.stripe_price_monthly_id) {
           monthly.push({
-            id: row.monthly_product_id,
-            name: row.monthly_plan_name,
-            price: row.price_monthly,
-            description: row.plan_description,
+            id: plan.id,
+            name: plan.plan_name,
+            price: plan.price_monthly,
+            description: plan.plan_description || "",
+            stripePriceId: plan.stripe_price_monthly_id,
+            features: plan.tags ? plan.tags.split(",") : [],
+            currency: plan.currency || "EUR",
           });
         }
-
-        if (row.yearly_plan_name && row.price_yearly) {
+        if (plan.price_yearly && plan.stripe_price_yearly_id) {
           yearly.push({
-            id: row.yearly_product_id,
-            name: row.yearly_plan_name,
-            price: row.price_yearly,
-            description: row.plan_description,
+            id: plan.id,
+            name: plan.plan_name,
+            price: plan.price_yearly,
+            description: plan.plan_description || "",
+            stripePriceId: plan.stripe_price_yearly_id,
+            features: plan.tags ? plan.tags.split(",") : [],
+            currency: plan.currency || "EUR",
           });
         }
       });
-
       setMonthlyPlans(monthly);
       setYearlyPlans(yearly);
     }
-
     setLoading(false);
   };
+
+  console.log("Mothly Plans ", monthlyPlans);
 
   useEffect(() => {
     fetchPlans();
@@ -135,25 +147,27 @@ export const SubscriptionBilling: React.FC = () => {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-black mb-2 text-left">
           Subscription & Billing
         </h1>
-        <p className="text-gray-600">
+        <p className="text-gray-600 text-left">
           Manage your subscription plan and billing information
         </p>
       </div>
 
       {/* Current Plan */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-bold text-black mb-6">Current Plan</h2>
+        <h2 className="text-xl font-bold text-black mb-6 text-left">
+          Current Plan
+        </h2>
 
         <div className="bg-[#078147]/5 border-2 border-[#078147]/20 rounded-lg p-6">
           <div className="flex items-center justify-between mb-4">
             <div>
-              <h3 className="text-2xl font-bold text-[#078147]">
+              <h3 className="text-2xl font-bold text-[#078147] text-left">
                 {currentPlan.name}
               </h3>
-              <p className="text-gray-600">
+              <p className="text-gray-600 text-left">
                 €{currentPlan.price}/{currentPlan.period}
               </p>
             </div>
@@ -178,7 +192,9 @@ export const SubscriptionBilling: React.FC = () => {
 
       {/* Billing Frequency */}
       <div className="bg-white rounded-lg shadow-sm border p-6">
-        <h2 className="text-xl font-bold text-black mb-6">Billing Frequency</h2>
+        <h2 className="text-xl font-bold text-black mb-6 text-left">
+          Billing Frequency
+        </h2>
 
         <div className="flex bg-gray-100 rounded-lg p-1 max-w-xs">
           <button
@@ -208,66 +224,74 @@ export const SubscriptionBilling: React.FC = () => {
       </div>
 
       {/* Available Plans */}
-      <h2 className="text-xl font-bold text-black mb-6">Available Plans</h2>
+      <div className="bg-white rounded-lg shadow-sm border p-6">
+        <h2 className="text-xl font-bold text-black mb-6 text-left">
+          Available Plans
+        </h2>
 
-      {isAnnual ? (
-        <div className="plan_parent flex  flex-wrap gap-4 justify-center">
-          {yearlyPlans.map((yearPlan) => (
-            <div
-              key={yearPlan.id}
-              className="bg-white rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
-            >
-              <h3 className="text-lg font-bold mb-2">{yearPlan.name}</h3>
-              <p className="text-2xl font-bold mb-2 text-[#078147]">
-                ${yearPlan.price} / Year
-              </p>
-
+        {isAnnual ? (
+          <div className="plan_parent flex  flex-wrap gap-4  text-left">
+            {yearlyPlans.map((yearPlan) => (
               <div
-                className="text-sm text-gray-800"
-                dangerouslySetInnerHTML={{
-                  __html: yearPlan.description.replace(
-                    /<ul>/g,
-                    '<ul class="list-disc pl-6 space-y-2">'
-                  ),
-                }}
-              ></div>
-              <button
-                onClick={() => handleCheckout(yearPlan.id)}
-                className="mt-5 bg-[#078147] text-white px-6 py-2 rounded-lg hover:bg-black transition duration-300"
+                key={yearPlan.id}
+                className="bg-white rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
               >
-                Purchase Plan
-              </button>
-            </div>
-          ))}
-        </div>
-      ) : (
-        <div className="plan_parent flex flex-wrap gap-4 justify-center">
-          {monthlyPlans.map((monthlyPlan) => (
-            <div
-              key={monthlyPlan.id}
-              className="rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
-            >
-              <h3 className="text-lg font-bold mb-2">{monthlyPlan.name}</h3>
-              <p className="text-2xl font-bold mb-2 text-[#078147]">
-                ${monthlyPlan.price} / month
-              </p>
+                <h3 className="text-lg font-bold mb-2">{yearPlan.name}</h3>
+                <p className="text-2xl font-bold mb-2 text-[#078147]">
+                  ${yearPlan.price} / Year
+                </p>
 
+                <div
+                  className="text-sm text-gray-800"
+                  dangerouslySetInnerHTML={{
+                    __html: yearPlan.description.replace(
+                      /<ul>/g,
+                      '<ul class="list-disc pl-6 space-y-2">'
+                    ),
+                  }}
+                ></div>
+                <button
+                  onClick={() => handleCheckout(yearPlan.stripePriceId)}
+                  className="flex gap-5 mt-5 bg-[#078147] text-white px-6 py-2 rounded-lg hover:bg-black transition duration-300"
+                >
+                  <ArrowUpRight />
+                  Purchase Plan
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="plan_parent flex flex-wrap gap-4 text-left">
+            {monthlyPlans.map((monthlyPlan) => (
               <div
-                className="text-sm text-gray-800"
-                dangerouslySetInnerHTML={{
-                  __html: monthlyPlan.description.replace(
-                    /<ul>/g,
-                    '<ul class="list-disc pl-6 space-y-2">'
-                  ),
-                }}
-              ></div>
-              <button className="mt-5 bg-[#078147] text-white px-6 py-2 rounded-lg hover:bg-black transition duration-300">
-                Purchase Plan
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
+                key={monthlyPlan.id}
+                className="rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
+              >
+                <h3 className="text-lg font-bold mb-2">{monthlyPlan.name}</h3>
+                <p className="text-2xl font-bold mb-2 text-[#078147]">
+                  ${monthlyPlan.price} / month
+                </p>
+
+                <div
+                  className="text-sm text-gray-800"
+                  dangerouslySetInnerHTML={{
+                    __html: monthlyPlan.description.replace(
+                      /<ul>/g,
+                      '<ul class="list-disc pl-6 space-y-2">'
+                    ),
+                  }}
+                ></div>
+                <button
+                  className="mt-5 bg-[#078147] text-white px-6 py-2 rounded-lg hover:bg-black transition duration-300"
+                  onClick={() => handleCheckout(monthlyPlan.stripePriceId)}
+                >
+                  Purchase Plan
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
       {/* <div className="plan_parent flex flex-wrap gap-4 justify-center">
         {monthlyPlans.map((monthlyPlan) => (
