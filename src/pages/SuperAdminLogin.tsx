@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -38,6 +38,7 @@ async function getUserLocation() {
 
 const SuperAdminLogin = () => {
   const [step, setStep] = useState<LoginStep>("credentials");
+  const [isTwoStepEnabled, setIsTwoStepEnabled] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -48,6 +49,34 @@ const SuperAdminLogin = () => {
   const [errors, setErrors] = useState({ email: "", password: "", code: "" });
   const navigate = useNavigate();
   const { role, setRole } = useUserContext();
+  const [qrCode, setQrCode] = useState(null);
+
+  const fetchTwoStepAuth = async () => {
+    try {
+      const { data, error } = await supabase
+        .from("settings")
+        .select("two_factor_auth")
+        .single();
+
+      if (error) {
+        console.error("Error fetching settings:", error);
+        return;
+      }
+
+      if (data.two_factor_auth) {
+        setIsTwoStepEnabled(true);
+        console.log("2 fa on go to otp", data);
+        setStep("otp");
+      } else {
+        setIsTwoStepEnabled(false);
+        setStep("credentials");
+        console.log("2 fa off go to dashboard");
+        navigate("/super-admin");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
 
   const handleCredentialsSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -124,8 +153,12 @@ const SuperAdminLogin = () => {
           .from("users")
           .update({ last_login: new Date().toISOString() })
           .eq("user_id", userId);
-        toast.success("Welcome Super Admin!");
-        navigate("/super-admin");
+
+        fetchTwoStepAuth();
+        setup2FA();
+
+        // toast.success("Welcome Super Admin!");
+        // navigate("/super-admin");
         return;
       }
 
@@ -151,41 +184,88 @@ const SuperAdminLogin = () => {
     }
   };
 
-  const handleTwoFactorSubmit = async () => {
-    if (verificationCode.length !== 6) {
-      setErrors({ ...errors, code: "Please enter the complete 6-digit code" });
+  const setup2FA = async () => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    const res = await fetch(
+      "https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/setup-2fa",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ userId: user.id, email: user.email }),
+      }
+    );
+
+    console.log("response from setup 2fa:;", res);
+
+    const { qr } = await res.json();
+    setQrCode(qr);
+  };
+
+  // const verify2FA = async (token) => {
+  //   const {
+  //     data: { user },
+  //   } = await supabase.auth.getUser();
+
+  //   const res = await fetch("/functions/v1/verify-2fa", {
+  //     method: "POST",
+  //     headers: { "Content-Type": "application/json" },
+  //     body: JSON.stringify({ userId: user.id, token }),
+  //   });
+
+  //   const { success } = await res.json();
+  //   if (success) {
+  //     alert("2FA verified!");
+  //     navigate("/dashboard");
+  //   } else {
+  //     alert("Invalid code");
+  //   }
+  // };
+
+  const verify2FA = async (token) => {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+
+    if (!session) {
+      alert("You must be logged in first!");
       return;
     }
 
-    setIsLoading(true);
-    setErrors({ ...errors, code: "" });
-
-    // Simulate API verification
-    setTimeout(() => {
-      if (verificationCode === "123456") {
-        // Demo code for testing
-        // Set remember me if enabled
-        if (rememberMe) {
-          const expiryDate = new Date();
-          expiryDate.setDate(expiryDate.getDate() + 60); // 60 days
-          localStorage.setItem("superadmin_remembered", email);
-          localStorage.setItem(
-            "superadmin_remember_expiry",
-            expiryDate.toISOString()
-          );
-        }
-
-        navigate("/super-admin");
-        toast("Access granted!");
-      } else {
-        setErrors({
-          ...errors,
-          code: "Invalid verification code. Please try again.",
-        });
-        setVerificationCode("");
+    const res = await fetch(
+      `https://ajbxscredobhqfksaqrk.supabase.co/functions/v1/verify-2fa`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${session.access_token}`,
+        },
+        body: JSON.stringify({ token }),
       }
-      setIsLoading(false);
-    }, 1000);
+    );
+
+    const { success } = await res.json();
+    if (success) {
+      toast.success("2FA verified!");
+      localStorage.setItem("role", role);
+      navigate("/super-admin");
+    } else {
+      toast.error("Invalid code");
+    }
+  };
+
+  const handleTwoFactorSubmit = async () => {
+    const code = verificationCode.trim();
+    verify2FA(code);
+    // console.log("verification code is :", verificationCode);
   };
 
   const handleResendCode = () => {
@@ -210,7 +290,7 @@ const SuperAdminLogin = () => {
     setShowForgotPassword(false);
   };
 
-  if (step === "2fa") {
+  if (isTwoStepEnabled) {
     return (
       <div className="min-h-screen flex">
         {/* Left Side - Brand Section */}
@@ -248,6 +328,12 @@ const SuperAdminLogin = () => {
             </div>
 
             <div className="mb-8">
+              {qrCode && (
+                <div>
+                  <p>Scan this QR code in Google Authenticator:</p>
+                  <img src={qrCode} alt="2FA QR Code" />
+                </div>
+              )}
               <h2 className="text-3xl font-bold text-gray-900 mb-2">
                 Enter Verification Code
               </h2>

@@ -80,6 +80,11 @@ export const SubscriptionBilling: React.FC = () => {
 
   async function handleCheckout(priceId) {
     console.log("Price Id", priceId);
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -92,7 +97,7 @@ export const SubscriptionBilling: React.FC = () => {
           "Content-Type": "application/json",
           Authorization: `Bearer ${session?.access_token}`,
         },
-        body: JSON.stringify({ priceId }),
+        body: JSON.stringify({ priceId, user_id: user.id }),
       }
     );
     const data = await res.json();

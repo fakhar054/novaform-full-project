@@ -26,6 +26,7 @@ import AdminPublicRoute from "./components/AdminPublicRoute";
 import AdminProtectRoute from "./components/AdminProtectedRoute";
 import { SubscriptionPlan } from "./pages/SubscriptionPlan";
 import Success from "./pages/Success";
+import InvoiceDetail from "./InvoiceDetail";
 
 const queryClient = new QueryClient();
 
@@ -75,6 +76,7 @@ const AppContent = () => {
           }
         />
         <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/invoice/:invoice_Id" element={<InvoiceDetail />} />
         <Route path="/verify-2fa" element={<TwoFactorVerification />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/create-new-plan" element={<SubscriptionPlan />} />

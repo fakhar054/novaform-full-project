@@ -403,8 +403,8 @@ export const SuperAdminSettings: React.FC = () => {
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <Label className="font-medium text-gray-900">
+              <div className="text-left">
+                <Label className="font-medium text-gray-900 text-left">
                   Two-Factor Authentication
                 </Label>
                 <p className="text-sm text-gray-600">
@@ -421,8 +421,8 @@ export const SuperAdminSettings: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="sessionTimeout">Session Timeout (minutes)</Label>
+            <div className="space-y-2 text-left">
+              <Label htmlFor="sessionTimeout ">Session Timeout (minutes)</Label>
               <Input
                 name="session_storage_time"
                 value={formData.session_storage_time}
@@ -431,7 +431,7 @@ export const SuperAdminSettings: React.FC = () => {
               />
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 text-left">
               <Label htmlFor="apiRateLimit">
                 API Rate Limit (requests/hour)
               </Label>
@@ -446,7 +446,7 @@ export const SuperAdminSettings: React.FC = () => {
             </div>
 
             <div className="flex items-center justify-between">
-              <div>
+              <div className="text-left">
                 <Label className="font-medium text-gray-900">
                   Require Email Verification
                 </Label>
@@ -474,8 +474,8 @@ export const SuperAdminSettings: React.FC = () => {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+          <CardContent className="space-y-4 text-left">
+            <div className="space-y-2 ">
               <Label htmlFor="platformName">Platform Name</Label>
               <Input
                 id="platformName"
@@ -498,7 +498,14 @@ export const SuperAdminSettings: React.FC = () => {
 
             <div className="space-y-2">
               <Label htmlFor="defaultLanguage">Default Language</Label>
-              <Select
+              <Input
+                id="defaultLanguage"
+                type="text"
+                name="defaultLanguage"
+                value={formData.languages}
+                readOnly
+              />
+              {/* <Select
                 value={formData.selected_language}
                 onValueChange={(value) =>
                   setFormData((prev) => ({
@@ -518,7 +525,7 @@ export const SuperAdminSettings: React.FC = () => {
                       </SelectItem>
                     ))}
                 </SelectContent>
-              </Select>
+              </Select> */}
             </div>
 
             <div className="space-y-2">
@@ -539,7 +546,7 @@ export const SuperAdminSettings: React.FC = () => {
           <CardHeader>
             <div className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-[#1C9B7A]" />
-              <CardTitle className="text-lg font-semibold text-gray-900">
+              <CardTitle className="text-lg font-semibold text-gray-900 ">
                 Stripe Integration
               </CardTitle>
               <div
@@ -553,7 +560,7 @@ export const SuperAdminSettings: React.FC = () => {
               </div>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="space-y-4 text-left">
             <div className="space-y-2">
               <Label htmlFor="stripePublishable">Stripe Publishable Key</Label>
               <Input
@@ -695,8 +702,8 @@ export const SuperAdminSettings: React.FC = () => {
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
+          <CardContent className="space-y-4 text-left">
+            <div className="space-y-2 text-left">
               <Label htmlFor="emailProvider">Email Service</Label>
               {/* <Select
                 value={formData.selected_email_service_provider}
@@ -1038,9 +1045,9 @@ export const SuperAdminSettings: React.FC = () => {
               </CardTitle>
             </div>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
+          <CardContent className="space-y-4 text-left">
+            <div className="flex items-center justify-between text-left">
+              <div className="text-left">
                 <Label className="font-medium text-gray-900">
                   Email Notifications
                 </Label>

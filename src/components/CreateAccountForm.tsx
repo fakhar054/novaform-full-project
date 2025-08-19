@@ -328,6 +328,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
     const userId = authData.user.id;
 
     const { error: dbError } = await supabaseAdmin.from("users").insert({
+      user_id: userId,
       businessName: formData.businessName || null,
       contactPerson: formData.contactPerson || null,
       phone: formData.phone || null,
@@ -435,7 +436,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
       <Card className="bg-white border border-gray-200">
         <CardHeader>
           <CardTitle className="text-lg font-semibold text-gray-900">
-            Referent Details
+            Referent Detail
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -673,6 +674,7 @@ export const CreateAccountForm: React.FC<CreateAccountFormProps> = ({
                 value={formData.country}
                 onChange={(e) => handleInputChange("country", e.target.value)}
                 placeholder="ABC1234"
+                readOnly
               />
             </div>
           </div>

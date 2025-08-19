@@ -1,7 +1,17 @@
-import React from "react";
-import { Download, Calendar, FileText } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Download, Calendar, FileText, Eye } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import Spinner from "../Spinner";
+import { useNavigate } from "react-router-dom";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 
 export const Invoices: React.FC = () => {
+  const navigate = useNavigate();
+  const [invoicesDynamic, setInvoicesDynamic] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [total_price, setTotal_Price] = useState();
+
   const invoices = [
     {
       id: "INV-2024-001",
@@ -40,6 +50,164 @@ export const Invoices: React.FC = () => {
     },
   ];
 
+  useEffect(() => {
+    const fetchInvoices = async () => {
+      try {
+        const { data, error } = await supabase.from("invoices").select("*");
+
+        if (error) {
+          console.error("Error fetching invoices:", error.message);
+        } else {
+          setInvoicesDynamic(data);
+          console.log("data from inoice table ", data);
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchInvoices();
+  }, []);
+
+  const getDayOfYear = (date) => {
+    const start = new Date(date.getFullYear(), 0, 0);
+    const diff = date - start;
+    return Math.floor(diff / (1000 * 60 * 60 * 24));
+  };
+
+  // main formatter
+  const formatNFDate = (dateString) => {
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const dayOfYear = getDayOfYear(date);
+    return `NF-${year}-${dayOfYear}`;
+  };
+
+  const generateInvoice = (invoice) => {
+    console.log("I am invoice::", invoice);
+    const tax_total = invoice.tax_percentage * invoice.amount_total;
+    const priceAfterTax = invoice.amount_total + tax_total;
+    setTotal_Price(priceAfterTax);
+
+    const doc = new jsPDF();
+
+    // Company Header
+    doc.setFontSize(16);
+    doc.setTextColor(41, 128, 185); // blue
+    doc.text("NovaFarm", 14, 20);
+
+    doc.setFontSize(11);
+    doc.setTextColor(0, 0, 0);
+    doc.text("Fornitore", 14, 30);
+    doc.setFont("helvetica", "bold");
+    doc.text("NovaFarm S.r.l", 14, 37);
+    doc.setFont("helvetica", "normal");
+    doc.text("Via delle Scienze 42, 10100 Turin (TO)", 14, 44);
+    doc.text("VAT number: 11223344556", 14, 51);
+    doc.text("SDI: ABC1234", 14, 58);
+    doc.text("PEC: novafarm@pec.it", 14, 65);
+
+    // Invoice Info (Right side)
+    doc.setFont("helvetica", "bold");
+
+    const formatted = formatNFDate(invoice.created_at);
+
+    doc.text(`Fattura N.:${invoice.invoice_no}`, 140, 20);
+    doc.text(`Data: ${formatted}`, 140, 28);
+
+    // Client Info
+    doc.setFontSize(14);
+    doc.text("Cliente", 140, 40);
+    doc.setFont("helvetica", "bold");
+    doc.text(`${invoice.customer_name}`, 140, 48);
+    doc.setFontSize(11);
+    doc.setFont("helvetica", "normal");
+
+    doc.text(`${invoice.address}`, 140, 55);
+    doc.text(`VAT number: ${invoice.vat}`, 140, 62);
+    doc.text(`SDI number: ${invoice.sdi}`, 140, 69);
+    doc.text(`PEC: ${invoice.personal_email}`, 140, 76);
+
+    // Services Table
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Descrizione Servizi", 14, 85);
+    const head = [
+      ["Prodotto / Servizio", "Quantità", "Prezzo Unitario", "IVA", "Totale"],
+    ];
+
+    const body = [
+      [
+        invoice.plan_name,
+        invoice.quantity,
+        invoice.amount_total,
+        invoice.tax_percentage * 100 + "%",
+        priceAfterTax,
+      ],
+    ];
+
+    autoTable(doc, {
+      startY: 90,
+      head: head,
+      body: body,
+      theme: "grid",
+      styles: {
+        halign: "center",
+        valign: "middle",
+      },
+      columnStyles: {
+        0: { cellWidth: 60, halign: "left" },
+        1: { cellWidth: 30 },
+        2: { cellWidth: 30 },
+        3: { cellWidth: 30 },
+        4: { cellWidth: 30 },
+      },
+    });
+
+    //summary table
+    const summaryY = doc.lastAutoTable ? doc.lastAutoTable.finalY + 10 : 150;
+
+    doc.setFontSize(14);
+    doc.setFont("helvetica", "bold");
+    doc.text("Riepilogo", 14, summaryY);
+
+    const head2 = [["Imponibile", invoice.amount_total]];
+
+    autoTable(doc, {
+      startY: summaryY + 5,
+      head: head2,
+      body: [],
+      theme: "grid",
+      styles: {
+        halign: "left",
+        valign: "middle",
+        fontStyle: "bold",
+      },
+      headStyles: {
+        fillColor: [255, 255, 255],
+        textColor: [0, 0, 0],
+        lineColor: [0, 0, 0],
+        lineWidth: 0.3,
+      },
+      columnStyles: {
+        0: { cellWidth: 100, halign: "left" },
+        1: { cellWidth: 60, halign: "right" },
+      },
+    });
+
+    // Save
+    doc.save(`invoice-${invoice.number}.pdf`);
+  };
+
+  if (loading)
+    return (
+      <div>
+        <Spinner />
+      </div>
+    );
+
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
       year: "numeric",
@@ -51,6 +219,10 @@ export const Invoices: React.FC = () => {
   const handleDownload = (invoiceId: string) => {
     // Simulate PDF download
     console.log(`Downloading invoice ${invoiceId}`);
+  };
+
+  const handleShowInvoice = (id) => {
+    navigate(`/invoice/${id}`);
   };
 
   return (
@@ -115,7 +287,7 @@ export const Invoices: React.FC = () => {
           <table className="w-full">
             <thead className="bg-gray-50">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider ">
                   Invoice
                 </th>
                 <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -136,26 +308,26 @@ export const Invoices: React.FC = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {invoices.map((invoice) => (
-                <tr key={invoice.id} className="hover:bg-gray-50">
+              {invoicesDynamic.map((invoice) => (
+                <tr key={invoice.id} className="hover:bg-gray-50 text-left">
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-black">
-                      {invoice.id}
+                      {invoice?.invoice_no}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm text-gray-600">
-                      {formatDate(invoice.date)}
+                      {formatDate(invoice?.created_at)}
                     </div>
                   </td>
                   <td className="px-6 py-4">
                     <div className="text-sm text-gray-600">
-                      {invoice.description}
+                      {/* {invoice.description} */}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-black">
-                      €{invoice.amount.toFixed(2)}
+                      €{invoice.amount_total.toFixed(2)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -166,11 +338,17 @@ export const Invoices: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <button
-                      onClick={() => handleDownload(invoice.id)}
+                      // onClick={() => handleDownload(invoice.id)}
                       className="flex items-center space-x-1 text-[#078147] hover:text-[#066139] font-medium"
                     >
-                      <Download className="w-4 h-4" />
-                      <span>PDF</span>
+                      <Download
+                        className="w-4 h-4"
+                        onClick={() => generateInvoice(invoice)}
+                      />
+                      <Eye
+                        className="w-5 h-5 "
+                        onClick={() => handleShowInvoice(invoice.id)}
+                      />
                     </button>
                   </td>
                 </tr>
@@ -184,7 +362,7 @@ export const Invoices: React.FC = () => {
       <div className="flex justify-end">
         <button className="bg-[#078147] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#066139] transition-colors flex items-center space-x-2">
           <Download className="w-5 h-5" />
-          <span>Download All Invoices</span>
+          {/* <span>Download All Invoices</span> */}
         </button>
       </div>
     </div>

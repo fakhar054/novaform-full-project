@@ -99,8 +99,8 @@ export const AccountSettings: React.FC = () => {
       // console.log("data fetched from  Account Setting", data);
       setUserData(data);
       setPersonalData({
-        firstName: data.firstName || "",
-        lastName: data.lastName || "",
+        firstName: data.businessName || "",
+        lastName: data.contactPerson || "",
         email: data.email || "",
         phone: data.phone || "",
         language: data.language || "",
@@ -115,10 +115,10 @@ export const AccountSettings: React.FC = () => {
       });
 
       setBillingData({
-        streetAddress: data.streetAddress || "",
+        streetAddress: data.address || "",
         city: data.city || "",
         province: data.province || "",
-        zipCode: data.zipCode || "",
+        zipCode: data.cap || "",
         country: data.country || "",
       });
     }

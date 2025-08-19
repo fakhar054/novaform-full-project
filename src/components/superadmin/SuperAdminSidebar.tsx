@@ -137,6 +137,7 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
     label: "Email",
     icon: Mail,
   });
+
   // const menuItems = [
   //   {
   //     id: "dashboard" as SuperAdminSection,
@@ -172,6 +173,7 @@ export const SuperAdminSidebar: React.FC<SuperAdminSidebarProps> = ({
 
   const handleLogout = () => {
     localStorage.removeItem("sb-ajbxscredobhqfksaqrk-auth-token");
+    localStorage.removeItem("role");
     navigate("/");
     toast.success("Logut Successful");
   };
