@@ -11,6 +11,8 @@ export const Invoices: React.FC = () => {
   const [invoicesDynamic, setInvoicesDynamic] = useState([]);
   const [loading, setLoading] = useState(true);
   const [total_price, setTotal_Price] = useState();
+  const [total_Invoices, setTotal_Invoices] = useState();
+  const [total_subscription_amount, set_total_subscription_amount] = useState();
 
   const invoices = [
     {
@@ -60,6 +62,7 @@ export const Invoices: React.FC = () => {
         } else {
           setInvoicesDynamic(data);
           console.log("data from inoice table ", data);
+          setTotal_Invoices(data?.length);
         }
       } catch (err) {
         console.error("Unexpected error:", err.message);
@@ -70,6 +73,12 @@ export const Invoices: React.FC = () => {
 
     fetchInvoices();
   }, []);
+
+  const totalAmountPaid = invoicesDynamic?.reduce((acc, single_invoice) => {
+    return acc + single_invoice.amount_total;
+  }, 0);
+
+  console.log("Total Amount Paid:", totalAmountPaid);
 
   const getDayOfYear = (date) => {
     const start = new Date(date.getFullYear(), 0, 0);
@@ -173,12 +182,16 @@ export const Invoices: React.FC = () => {
     doc.setFont("helvetica", "bold");
     doc.text("Riepilogo", 14, summaryY);
 
-    const head2 = [["Imponibile", invoice.amount_total]];
-
     autoTable(doc, {
       startY: summaryY + 5,
-      head: head2,
-      body: [],
+      body: [
+        ["Imponibile", invoice.amount_total],
+        [
+          "IVA " + invoice.tax_percentage * 100 + "%",
+          invoice.amount_total * invoice.tax_percentage,
+        ],
+        ["Totale Fattura", priceAfterTax],
+      ],
       theme: "grid",
       styles: {
         halign: "left",
@@ -197,8 +210,70 @@ export const Invoices: React.FC = () => {
       },
     });
 
+    const finalY = doc.lastAutoTable.finalY + 10;
+    doc.setFontSize(11);
+
+    doc.setFont("helvetica", "bold");
+    doc.text("Pagamento:", 14, finalY);
+
+    let headingWidth = doc.getTextWidth("Pagamento: ") + 2;
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      "Bonifico bancario – IBAN: IT99A0123412341234123412345 – Intesa Sanpaolo",
+      14 + headingWidth,
+      finalY
+    );
+
+    // Termini di pagamento
+    doc.setFont("helvetica", "bold");
+    doc.text("Termini di pagamento:", 14, finalY + 8);
+    headingWidth = doc.getTextWidth("Termini di pagamento: ") + 2;
+
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      "Pagamento anticipato. Il servizio viene attivato solo a saldo ricevuto.",
+      14 + headingWidth,
+      finalY + 8,
+      { maxWidth: 170 }
+    );
+
+    // Ritardo nel pagamento
+    doc.setFont("helvetica", "bold");
+    doc.text("In caso di ritardo nel pagamento:", 14, finalY + 16);
+    headingWidth = doc.getTextWidth("In caso di ritardo nel pagamento: ") + 2;
+
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      "saranno applicati gli interessi legali ai sensi del D.lgs. 231/2002.",
+      14 + headingWidth,
+      finalY + 16,
+      { maxWidth: 170 }
+    );
+
+    // Nota
+    doc.setFont("helvetica", "bold");
+    doc.text("Nota:", 14, finalY + 24);
+    headingWidth = doc.getTextWidth("Nota: ") + 2;
+
+    doc.setFont("helvetica", "normal");
+    doc.text(
+      "La presente è una copia della fattura elettronica inviata tramite Sistema di Interscambio (SDI). " +
+        "Il documento originale è consultabile accedendo con SPID al portale dell’Agenzia delle Entrate.",
+      14 + headingWidth,
+      finalY + 24,
+      { maxWidth: 170 }
+    );
+
+    // Stato della fattura
+    doc.setFont("helvetica", "bold");
+    doc.text("Stato della fattura:", 14, finalY + 36);
+    headingWidth = doc.getTextWidth("Stato della fattura: ") + 2;
+
+    doc.setFont("helvetica", "normal");
+    doc.text("Saldata", 14 + headingWidth, finalY + 36);
+
     // Save
-    doc.save(`invoice-${invoice.number}.pdf`);
+    doc.save(`invoice-${invoice.invoice_no}.pdf`);
   };
 
   if (loading)
@@ -248,7 +323,7 @@ export const Invoices: React.FC = () => {
             Total Invoices
           </h3>
           <p className="text-2xl font-bold text-[#078147] text-left">
-            {invoices.length}
+            {total_Invoices}
           </p>
         </div>
 
