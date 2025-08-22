@@ -300,6 +300,23 @@ export const Invoices: React.FC = () => {
     navigate(`/invoice/${id}`);
   };
 
+  // const formatCurrencyItalian = (amount) => {
+  //   return new Intl.NumberFormat("it-IT", {
+  //     style: "currency",
+  //     currency: "EUR",
+  //   }).format(amount);
+  // };
+
+  const formatCurrencyItalian = (amount) => {
+    const formatted = new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
+
+    // Force symbol in front
+    return formatted.replace("€", "").trim().replace(/^/, "€ ");
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -334,7 +351,9 @@ export const Invoices: React.FC = () => {
             </div>
           </div>
           <h3 className="font-semibold text-black mb-1 text-left">This Year</h3>
-          <p className="text-2xl font-bold text-[#078147] text-left">€199.00</p>
+          <p className="text-2xl font-bold text-[#078147] text-left">
+            {formatCurrencyItalian(totalAmountPaid)}
+          </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -402,7 +421,8 @@ export const Invoices: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-medium text-black">
-                      €{invoice.amount_total.toFixed(2)}
+                      {/* €{invoice.amount_total.toFixed(2)} */}
+                      {formatCurrencyItalian(invoice?.amount_total)}
                     </div>
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
@@ -434,12 +454,11 @@ export const Invoices: React.FC = () => {
       </div>
 
       {/* Download All */}
-      <div className="flex justify-end">
+      {/* <div className="flex justify-end">
         <button className="bg-[#078147] text-white px-6 py-3 rounded-lg font-semibold hover:bg-[#066139] transition-colors flex items-center space-x-2">
           <Download className="w-5 h-5" />
-          {/* <span>Download All Invoices</span> */}
         </button>
-      </div>
+      </div> */}
     </div>
   );
 };

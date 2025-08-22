@@ -8,6 +8,7 @@ import { TwoFactorModal } from "./TwoFactorModal";
 import { PasswordStrength } from "@/components/ui/password-strength";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import Spinner from "../Spinner";
 
 export const AccountSettings: React.FC = () => {
   const [loadingPersonal, setLoadingPersonal] = useState(false);
@@ -15,6 +16,7 @@ export const AccountSettings: React.FC = () => {
   const [loadingBilling, setLoadingBilling] = useState(false);
   const [loadingPassword, setLoadingPassword] = useState(false);
   const [userData, setUserData] = useState();
+  const [loadingAll, setLoadingAll] = useState(true);
 
   // console.log("user Data", userData);
 
@@ -82,6 +84,8 @@ export const AccountSettings: React.FC = () => {
       error: userError,
     } = await supabase.auth.getUser();
 
+    const email = user.email;
+
     if (userError || !user) {
       console.error("Auth error:", userError?.message);
       setUserLoading(false);
@@ -90,7 +94,7 @@ export const AccountSettings: React.FC = () => {
     const { data, error } = await (supabase as any)
       .from("users")
       .select("*")
-      .eq("email", user.email)
+      .eq("user_id", user.id)
       .single();
 
     if (error) {
@@ -101,7 +105,7 @@ export const AccountSettings: React.FC = () => {
       setPersonalData({
         firstName: data.businessName || "",
         lastName: data.contactPerson || "",
-        email: data.email || "",
+        email: email || "",
         phone: data.phone || "",
         language: data.language || "",
       });
@@ -123,6 +127,7 @@ export const AccountSettings: React.FC = () => {
       });
     }
     setUserLoading(false);
+    setLoadingAll(false);
   };
 
   useEffect(() => {
@@ -153,7 +158,7 @@ export const AccountSettings: React.FC = () => {
         phone: data.phone,
         language: data.language,
       })
-      .eq("email", user.email);
+      .eq("user_id", user.id);
 
     if (error) {
       console.error("Update failed:", error.message);
@@ -197,7 +202,7 @@ export const AccountSettings: React.FC = () => {
         sdi_code: data.sdi_code,
         billingEmail: data.pec_email,
       })
-      .eq("email", user.email);
+      .eq("user_id", user.id);
 
     if (error) {
       console.error("Update failed in company", error.message);
@@ -243,7 +248,7 @@ export const AccountSettings: React.FC = () => {
         country: data.country,
         zipCode: data.zipCode,
       })
-      .eq("email", user.email);
+      .eq("user_id", user.id);
 
     if (error) {
       console.error("Update failed in biling", error.message);
@@ -300,66 +305,157 @@ export const AccountSettings: React.FC = () => {
     }, 1000);
   };
 
-  //code for change passwore
-  const user = supabase.auth.getUser();
+  // const fetchProfiles = async (user_id, newInfo) => {
+  //   const { data: existing, error: fetchError } = await supabase
+  //     .from("profile_Update")
+  //     .select("*")
+  //     .eq("user_id", user_id)
+  //     .single();
+
+  //   if (fetchError && fetchError.code !== "PGRST116") {
+  //     // PGRST116 = No rows found
+  //     console.error("Fetch error:", fetchError.message);
+  //     return null;
+  //   }
+
+  //   let result;
+  //   if (existing) {
+  //     // 2. Update
+  //     const { data, error } = await supabase
+  //       .from("profile_Update")
+  //       .update(newInfo)
+  //       .eq("user_id", user_id)
+  //       .select();
+
+  //     if (error) console.error("Update error:", error.message);
+  //     result = data;
+  //   } else {
+  //     // 3. Insert
+  //     const { data, error } = await supabase
+  //       .from("profile_Update")
+  //       .insert([{ user_id, ...newData }])
+  //       .select();
+
+  //     if (error) console.error("Insert error:", error.message);
+  //     else {
+  //       result = data;
+  //       console.log("Profile Table updated and result: ", result);
+  //     }
+  //   }
+
+  //   return result;
+  // };
+
+  // const handleChangePassword = async (e) => {
+  //   if (passwordData.newPassword !== passwordData.confirmPassword) {
+  //     toast.error("New Passord and Confrim Password are not same");
+  //   } else {
+  //     const { data, error } = await supabase.auth.updateUser({
+  //       password: passwordData.newPassword,
+  //     });
+
+  //     const {
+  //       data: { user },
+  //       error: userError,
+  //     } = await supabase.auth.getUser();
+
+  //     if (error) {
+  //       console.error("Password update error:", error.message);
+  //     } else {
+  //       toast.success("Password updated successfully!");
+  //       const id = user.id;
+  //       console.log("id at the time of password updated: ", id);
+  //       fetchProfiles("Password updated", id);
+  //     }
+  //   }
+  // };
+
+  const fetchProfiles = async (user_id, newInfo) => {
+    // Check if user exists
+    const { data: existing, error: fetchError } = await supabase
+      .from("profile_Update")
+      .select("id") // only need to check existence
+      .eq("user_id", user_id)
+      .single();
+
+    if (fetchError && fetchError.code !== "PGRST116") {
+      // PGRST116 = No rows found
+      console.error("Fetch error:", fetchError.message);
+      return null;
+    }
+
+    let result;
+
+    if (existing) {
+      // ✅ Update only changed_col
+      const { data, error } = await supabase
+        .from("profile_Update")
+        .update({ changed_col: newInfo })
+        .eq("user_id", user_id)
+        .select();
+
+      if (error) {
+        console.error("Update error:", error.message);
+      } else {
+        result = data;
+        console.log("Updated changed_col:", result);
+      }
+    } else {
+      // ✅ Insert new row
+      const { data, error } = await supabase
+        .from("profile_Update")
+        .insert([{ user_id, changed_col: newInfo }])
+        .select();
+
+      if (error) {
+        console.error("Insert error:", error.message);
+      } else {
+        result = data;
+        console.log("Inserted new row:", result);
+      }
+    }
+
+    return result;
+  };
+
   const handleChangePassword = async (e) => {
     e.preventDefault();
 
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      setMessage({ type: "error", text: "New passwords do not match" });
+      toast.error("New Password and Confirm Password are not same");
       return;
     }
 
-    const { data: userData, error: userError } = await supabase.auth.getUser();
-    if (userError || !userData?.user?.email) {
-      setIsLoading(false);
-      return;
-    }
-    const email = userData.user.email;
-    // 2. Re-authenticate with old password
-    const { error: signInError } = await supabase.auth.signInWithPassword({
-      email,
-      password: passwordData.currentPassword,
-    });
-
-    if (signInError) {
-      toast.error("Old password is incorrect.");
-      console.log("Old password is incorrect.");
-      setIsLoading(false);
-      return;
-    }
-
-    // 3. Update to new password
-    const { error } = await supabase.auth.updateUser({
+    // 🔹 Update password
+    const { error: updateError } = await supabase.auth.updateUser({
       password: passwordData.newPassword,
     });
-    setIsLoading(false);
-    if (error) {
-      toast.error(error.message);
-    } else {
-      toast.success("Password updated successfully!");
-      // console.log("Password updated successfully!");
-      passwordData.currentPassword = "";
-      passwordData.newPassword = "";
-      passwordData.confirmPassword = "";
+
+    if (updateError) {
+      console.error("Password update error:", updateError.message);
+      return;
     }
 
-    // setIsLoading(true);
-    // setMessage(null);
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
 
-    // Simulate API call
-    setTimeout(() => {
-      setIsLoading(false);
-      setMessage({ type: "success", text: "Password changed successfully!" });
-      setPasswordData({
-        currentPassword: "",
-        newPassword: "",
-        confirmPassword: "",
-      });
-      setShowPasswordForm(false);
-      setTimeout(() => setMessage(null), 3000);
-    }, 1000);
+    if (userError) {
+      console.error("Error fetching user:", userError.message);
+      return;
+    }
+
+    const id = user?.id;
+    console.log("id at the time of password updated:", id);
+
+    toast.success("Password updated successfully!");
+    fetchProfiles(id, "Password updated");
   };
+
+  if (loadingAll) {
+    return <Spinner />;
+  }
 
   return (
     <div className="space-y-6">

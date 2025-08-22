@@ -21,7 +21,7 @@ export const BillingAddressForm: React.FC<BillingAddressFormProps> = ({
   isLoading,
 }) => {
   const [formData, setFormData] = useState(data);
-  console.log("data coming in billing", data);
+  console.log("g", data);
 
   useEffect(() => {
     setFormData(data);

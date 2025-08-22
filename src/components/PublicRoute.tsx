@@ -2,6 +2,7 @@
 import { ReactNode, useEffect, useState } from "react";
 import { Navigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import Spinner from "./Spinner";
 
 interface PublicOnlyRouteProps {
   children: ReactNode;
@@ -16,6 +17,8 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) => {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+      const role = localStorage.getItem("role");
+      console.log("Role from public route is ", role);
 
       if (session) {
         setIsAuthenticated(true);
@@ -29,7 +32,9 @@ const PublicOnlyRoute: React.FC<PublicOnlyRouteProps> = ({ children }) => {
     checkSession();
   }, []);
 
-  if (loading) return <div>Loading...</div>;
+  if (loading) {
+    return <Spinner />;
+  }
 
   return isAuthenticated ? <Navigate to="/dashboard" /> : <>{children}</>;
 };

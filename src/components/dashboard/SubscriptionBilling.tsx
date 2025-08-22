@@ -9,6 +9,7 @@ import {
 import { AddPaymentMethodModal } from "./AddPaymentMethodModal";
 import { supabase } from "@/integrations/supabase/client";
 import { loadStripe } from "@stripe/stripe-js";
+import Spinner from "../Spinner";
 
 const stripePromise = loadStripe("pk_test_XnUVXcT65YQFYJOe88yYvrrh00gGazBh6a");
 
@@ -25,6 +26,10 @@ export const SubscriptionBilling: React.FC = () => {
   const [monthlyPlans, setMonthlyPlans] = useState([]);
   const [yearlyPlans, setYearlyPlans] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [allPlans, setAllPlans] = useState([]);
+
+  const [plan, setPlan] = useState();
+  const [selectedPlanId, setSelectedPlanId] = useState();
 
   const fetchPlans = async () => {
     setLoading(true);
@@ -36,7 +41,8 @@ export const SubscriptionBilling: React.FC = () => {
     if (error) {
       console.error("Error fetching plans:", error.message);
     } else {
-      // Split into monthly and yearly
+      // console.log("All plans coming from subscription_plan: ", data);
+      setAllPlans(data);
       const monthly = [];
       const yearly = [];
       data.forEach((plan) => {
@@ -123,31 +129,77 @@ export const SubscriptionBilling: React.FC = () => {
     ],
   };
 
-  const plans = [
-    {
-      name: "Starter",
-      monthlyPrice: 9.99,
-      annualPrice: 99,
-      features: [
-        "Up to 100 appointments/month",
-        "Basic analytics",
-        "Email notifications",
-        "Standard support",
-      ],
-    },
-    {
-      name: "Premium",
-      monthlyPrice: 19.99,
-      annualPrice: 199,
-      features: [
-        "Unlimited appointments",
-        "Advanced analytics",
-        "SMS notifications",
-        "Priority support",
-        "Custom branding",
-      ],
-    },
-  ];
+  useEffect(() => {
+    const fetchCurrentPlan = async () => {
+      const {
+        data: { user },
+        error: userError,
+      } = await supabase.auth.getUser();
+
+      if (userError) {
+        console.error("Error fetching user:", userError.message);
+        return;
+      }
+
+      if (!user) {
+        console.error("No user logged in");
+        return;
+      }
+      console.log("Uuser id ddd:", user.id);
+      const { data, error } = await supabase
+        .from("subscription")
+        .select("*")
+        .eq("user_id", user.id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching plan:", error.message);
+      } else {
+        console.log("Selectd Subscription id: ", data?.selected_plan_id);
+        setPlan(data);
+        setSelectedPlanId(data?.selected_plan_id);
+        setLoading(false);
+      }
+    };
+    fetchCurrentPlan();
+  }, []);
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "";
+    const date = new Date(isoDate);
+    return date.toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
+  const getPlanType = (
+    created_at: string,
+    current_period_end: string
+  ): string => {
+    const start = new Date(created_at);
+    const end = new Date(current_period_end);
+
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+    // console.log("diffDays (UTC):", diffDays);
+    return diffDays > 30 ? "Annual Billing" : "Monthly Billing";
+  };
+
+  const formatCurrencyItalian = (amount) => {
+    const formatted = new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
+
+    // Force symbol in front
+    return formatted.replace("€", "").trim().replace(/^/, "€ ");
+  };
+
+  if (loading) {
+    return <Spinner />;
+  }
 
   return (
     <div className="space-y-6">
@@ -170,16 +222,21 @@ export const SubscriptionBilling: React.FC = () => {
           <div className="flex items-center justify-between mb-4">
             <div>
               <h3 className="text-2xl font-bold text-[#078147] text-left">
-                {currentPlan.name}
+                {plan?.plan_name}
               </h3>
               <p className="text-gray-600 text-left">
-                €{currentPlan.price}/{currentPlan.period}
+                {plan?.amount_paid
+                  ? formatCurrencyItalian(plan?.amount_paid)
+                  : "0.00"}
+                /{getPlanType(plan?.created_at, plan?.current_period_end)}
               </p>
             </div>
             <div className="text-right">
               <p className="text-sm text-gray-600">Next billing</p>
               <p className="font-semibold text-black">
-                {currentPlan.nextBilling}
+                {plan?.current_period_end
+                  ? formatDate(plan?.current_period_end)
+                  : "NULL"}
               </p>
             </div>
           </div>
@@ -239,11 +296,16 @@ export const SubscriptionBilling: React.FC = () => {
             {yearlyPlans.map((yearPlan) => (
               <div
                 key={yearPlan.id}
-                className="bg-white rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
+                className="bg-white relative rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
               >
+                {yearPlan.stripePriceId === selectedPlanId && (
+                  <div className="absolute -top-3 left-4 bg-[#078147] text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Current Plan
+                  </div>
+                )}
                 <h3 className="text-lg font-bold mb-2">{yearPlan.name}</h3>
                 <p className="text-2xl font-bold mb-2 text-[#078147]">
-                  ${yearPlan.price} / Year
+                  {formatCurrencyItalian(yearPlan.price)} / Year
                 </p>
 
                 <div
@@ -270,11 +332,17 @@ export const SubscriptionBilling: React.FC = () => {
             {monthlyPlans.map((monthlyPlan) => (
               <div
                 key={monthlyPlan.id}
-                className="rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
+                className="rounded-lg relative shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
               >
+                {monthlyPlan.stripePriceId === selectedPlanId && (
+                  <div className="absolute -top-3 left-4 bg-[#078147] text-white px-3 py-1 rounded-full text-sm font-medium">
+                    Current Plan
+                  </div>
+                )}
                 <h3 className="text-lg font-bold mb-2">{monthlyPlan.name}</h3>
                 <p className="text-2xl font-bold mb-2 text-[#078147]">
-                  ${monthlyPlan.price} / month
+                  {/* ${monthlyPlan.price} / month */}
+                  {formatCurrencyItalian(monthlyPlan?.price)} / month
                 </p>
 
                 <div
@@ -298,119 +366,8 @@ export const SubscriptionBilling: React.FC = () => {
         )}
       </div>
 
-      {/* <div className="plan_parent flex flex-wrap gap-4 justify-center">
-        {monthlyPlans.map((monthlyPlan) => (
-          <div
-            key={monthlyPlan.id}
-            className="bg-white rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
-          >
-            <h3 className="text-lg font-bold mb-2">{monthlyPlan.name}</h3>
-            <p className="text-2xl font-bold mb-2 text-[#078147]">
-              ${monthlyPlan.price} / month
-            </p>
-
-            <div
-              className="text-sm text-gray-800"
-              dangerouslySetInnerHTML={{
-                __html: monthlyPlan.description.replace(
-                  /<ul>/g,
-                  '<ul class="list-disc pl-6 space-y-2">'
-                ),
-              }}
-            ></div>
-          </div>
-        ))}
-      </div> */}
-
-      {/* yearly */}
-      {/* <div className="plan_parent flex flex-wrap gap-4 justify-center">
-        {yearlyPlans.map((yearPlan) => (
-          <div
-            key={yearPlan.id}
-            className="bg-white rounded-lg shadow-sm p-6 border mb-4 w-full sm:w-[48%] lg:w-[45%]"
-          >
-            <h3 className="text-lg font-bold mb-2">{yearPlan.name}</h3>
-            <p className="text-2xl font-bold mb-2 text-[#078147]">
-              ${yearPlan.price} / Year
-            </p>
-
-            <div
-              className="text-sm text-gray-800"
-              dangerouslySetInnerHTML={{
-                __html: yearPlan.description.replace(
-                  /<ul>/g,
-                  '<ul class="list-disc pl-6 space-y-2">'
-                ),
-              }}
-            ></div>
-          </div>
-        ))}
-      </div> */}
-
-      {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {plans.map((plan) => {
-          const price = isAnnual ? plan.annualPrice : plan.monthlyPrice;
-          const period = isAnnual ? "year" : "month";
-          const isCurrent = plan.name === currentPlan.name;
-
-          return (
-            <div
-              key={plan.name}
-              className={`
-                border rounded-lg p-6 relative
-                ${
-                  isCurrent
-                    ? "border-[#078147] bg-[#078147]/5"
-                    : "border-gray-200"
-                }
-              `}
-            >
-              {isCurrent && (
-                <div className="absolute -top-3 left-4 bg-[#078147] text-white px-3 py-1 rounded-full text-sm font-medium">
-                  Current Plan
-                </div>
-              )}
-
-              <h3 className="text-xl font-bold text-black mb-2">{plan.name}</h3>
-              <div className="mb-4">
-                <span className="text-2xl font-bold text-[#078147]">
-                  €{price}
-                </span>
-                <span className="text-gray-600">/{period}</span>
-              </div>
-
-              <ul className="space-y-2 mb-6">
-                {plan.features.map((feature, index) => (
-                  <li key={index} className="flex items-center space-x-2">
-                    <div className="w-2 h-2 bg-[#078147] rounded-full"></div>
-                    <span className="text-sm text-gray-700">{feature}</span>
-                  </li>
-                ))}
-              </ul>
-
-              {!isCurrent && (
-                <button className="w-full bg-[#078147] text-white py-3 rounded-lg font-semibold hover:bg-[#066139] transition-colors flex items-center justify-center space-x-2">
-                  <ArrowUpRight className="w-4 h-4" />
-                  <span>Upgrade to {plan.name}</span>
-                </button>
-              )}
-
-              {isCurrent && currentPlan.name === "Premium" && (
-                <button
-                  onClick={() => setShowCancelModal(true)}
-                  className="w-full border border-gray-300 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-50 transition-colors flex items-center justify-center space-x-2"
-                >
-                  <ArrowDownRight className="w-4 h-4" />
-                  <span>Downgrade Plan</span>
-                </button>
-              )}
-            </div>
-          );
-        })}
-      </div> */}
-
       {/* Payment Method */}
-      <div className="bg-white rounded-lg shadow-sm border p-6">
+      {/* <div className="bg-white rounded-lg shadow-sm border p-6">
         <h2 className="text-xl font-bold text-black mb-6">Payment Method</h2>
 
         <div className="flex items-center justify-between p-4 border rounded-lg">
@@ -434,7 +391,7 @@ export const SubscriptionBilling: React.FC = () => {
         >
           Add New Payment Method
         </button>
-      </div>
+      </div> */}
 
       {/* Cancel Subscription Modal */}
       {showCancelModal && (

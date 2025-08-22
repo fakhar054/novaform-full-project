@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import {
   CheckCircle,
@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import Spinner from "@/components/Spinner";
 
 export default function Success() {
+  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [sessionData, setSessionData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -28,6 +29,10 @@ export default function Success() {
     const randomNum = Math.floor(100 + Math.random() * 900);
     return `NF:${year}-${randomNum}`;
   }
+
+  const gotoDashboard = () => {
+    navigate("/dashboard");
+  };
 
   const contactFirstName = "John";
   const planDetails = {
@@ -147,17 +152,18 @@ export default function Success() {
               duration: duration,
               // created_at: new Date(),
             });
+
           if (insertError) {
             console.error("Error saving invoice:", insertError.message);
           } else {
             // console.log("Invoice saved successfully 🎉");
             setInvoiceSaved(true);
+            setLoading(false);
           }
         }
       } catch (err) {
         console.error("Fetch session error:", err);
       } finally {
-        setLoading(false);
       }
     };
 
@@ -181,7 +187,6 @@ export default function Success() {
         console.error("Missing sessionId, accessToken, or userId");
         return;
       }
-      setLoading(false);
 
       if (invoiceSaved) {
         const { data, error } = await supabase
@@ -196,7 +201,7 @@ export default function Success() {
         } else if (data && data.length > 0) {
           console.log("Latest invoice:", data[0]);
           setInvoiceData(data[0]);
-          setLoading(true);
+          setLoading(false);
         }
       }
     };
@@ -238,8 +243,21 @@ export default function Success() {
   const nextBillingDate = expiryDate.toLocaleDateString();
   console.log("Expires:", expiryDate.toLocaleDateString());
 
+  const priceId =
+    sessionData?.session?.subscription?.items?.data?.[0]?.price?.id;
+  console.log("The selected price id: ", priceId);
+
+  const formatCurrencyItalian = (amount) => {
+    const formatted = new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
+
+    return formatted.replace("€", "").trim().replace(/^/, "€ ");
+  };
+
   if (loading) {
-    <Spinner />;
+    return <Spinner />;
   }
 
   return (
@@ -292,7 +310,7 @@ export default function Success() {
                 <div className="flex justify-between items-center py-2 border-b border-border">
                   <span className="text-muted-foreground">Amount Paid:</span>
                   <span className="font-medium text-foreground text-primary">
-                    €{inoviceData?.amount_total}
+                    {formatCurrencyItalian(inoviceData?.amount_total)}
                   </span>
                 </div>
                 <div className="flex justify-between items-center py-2 border-b border-border">
@@ -370,12 +388,12 @@ export default function Success() {
             style={{ animationDelay: "0.6s" }}
           >
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button size="lg" className="px-8">
+              <Button size="lg" className="px-8" onClick={gotoDashboard}>
                 Go to Dashboard
               </Button>
-              <Button variant="outline" size="lg" className="px-8">
+              {/* <Button variant="outline" size="lg" className="px-8">
                 Need help? Contact us
-              </Button>
+              </Button> */}
             </div>
           </div>
 

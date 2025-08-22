@@ -376,7 +376,7 @@ export const SuperAdminPayments: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <div className="font-medium text-gray-900">
-                        ${payment.amount_paid}
+                        ${payment?.amount_paid}
                         {/* €{payment.amount.toFixed(2)} */}
                       </div>
                     </TableCell>

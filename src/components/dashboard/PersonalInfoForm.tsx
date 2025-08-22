@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { Save } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PersonalInfoData {
   firstName: string;
@@ -21,10 +22,28 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
   isLoading,
 }) => {
   const [formData, setFormData] = useState(data);
-  // console.log("📦 Incoming props:", data);
+  const [email, setEmail] = useState();
+
   useEffect(() => {
     setFormData(data);
   }, [data]);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+
+      if (error) {
+        console.error("Error fetching user:", error.message);
+      } else if (user) {
+        setEmail(user.email);
+      }
+    };
+
+    fetchUser();
+  }, []);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -35,7 +54,47 @@ export const PersonalInfoForm: React.FC<PersonalInfoFormProps> = ({
     });
   };
 
-  const handleSave = () => {
+  // const handleSave = async () => {
+  //   if (currentEmail !== formData.email) {
+  //     console.log("email are not same");
+  //   } else {
+  //     console.log("email are  same");
+  //     try {
+  //       const { data, error } = await supabase.auth.updateUser({
+  //         email: formData.email,
+  //       });
+
+  //       if (error) {
+  //         console.log(" Error: " + error.message);
+  //       } else {
+  //         console.log(
+  //           "Email update request sent. Please check your inbox to confirm.",
+  //           data
+  //         );
+  //       }
+  //     } catch (err) {
+  //       console.error(err);
+  //       console.log("Something went wrong.");
+  //     }
+  //   }
+  //   onSave(formData);
+  // };
+
+  const handleSave = async () => {
+    if (email !== formData.email) {
+      // Update email
+      const { data, error } = await supabase.auth.updateUser({
+        email: formData.email,
+      });
+
+      if (error) {
+        console.log("Email update error:", error.message);
+      } else {
+        console.log("Confirmation link sent to new email.", data);
+        alert("Please check your new email to confirm the change.");
+      }
+    }
+
     onSave(formData);
   };
 

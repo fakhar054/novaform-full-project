@@ -1,19 +1,168 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CreditCard, Calendar, Plus, HeadphonesIcon } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import Spinner from "../Spinner";
 
 export const DashboardOverview: React.FC = () => {
+  const [subscription, setSubscription] = useState();
+  const [loading, setLoading] = useState(true);
+  const [businessName, setBusinessName] = useState();
+  const [profileChange, setProfileChange] = useState();
+
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const fetchSubscription = async () => {
+      const {
+        data: { user },
+        error,
+      } = await supabase.auth.getUser();
+      const userId = user.id;
+
+      if (error) {
+        console.error("Error getting user:", error.message);
+      } else {
+        console.log("User UUID:", userId);
+      }
+
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from("subscription")
+          .select("*")
+          .eq("user_id", userId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching subscriptions:", error.message);
+        } else {
+          console.log("Subscriptions:", data);
+          setSubscription(data);
+        }
+      } catch (err) {
+        console.error("Unexpected error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    const fetchUsers = async () => {
+      setLoading(true);
+      const { data, error } = await supabase.auth.getUser();
+      const userId = data.user.id;
+
+      try {
+        const { data, error } = await supabase
+          .from("users")
+          .select("businessName")
+          .eq("user_id", userId)
+          .single();
+
+        if (error) {
+          console.error("Error fetching businessName:", error.message);
+          return null;
+        }
+
+        console.log("Name based on userid: ", data);
+        setBusinessName(data?.businessName);
+        setLoading(false);
+      } catch (err) {
+        console.error("Unexpected error:", err);
+        return null;
+      }
+    };
+
+    fetchSubscription();
+    fetchUsers();
+  }, []);
+
+  const formatDate = (isoDate) => {
+    if (!isoDate) return "";
+    return new Date(isoDate).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  const getDaysAgo = (dateString) => {
+    if (!dateString) return "";
+    const planDate = new Date(dateString);
+    const today = new Date();
+
+    const planDateOnly = new Date(planDate.toDateString());
+    const todayOnly = new Date(today.toDateString());
+
+    const diffTime = todayOnly - planDateOnly;
+    const diffDays = diffTime / (1000 * 60 * 60 * 24);
+
+    return `${diffDays} days ago `;
+  };
   const handleBookSupport = () => {
     navigate("/book-demo");
   };
+
+  const getPlanType = (
+    created_at: string,
+    current_period_end: string
+  ): string => {
+    const start = new Date(created_at);
+    const end = new Date(current_period_end);
+
+    const diffMs = end.getTime() - start.getTime();
+    const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+
+    console.log("diffDays (UTC):", diffDays);
+
+    return diffDays > 30 ? "Annual Billing" : "Monthly Billing";
+  };
+
+  useEffect(() => {
+    const fetchProfileByUserId = async () => {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      const user_Id = user.id;
+      console.log("Logged in User UUID:", user.id);
+
+      const { data, error } = await supabase
+        .from("profile_Update")
+        .select("changed_col")
+        .eq("user_id", user_Id)
+        .single();
+
+      if (error) {
+        console.error("Error fetching profile:", error.message);
+        return null;
+      }
+
+      console.log("Fetched profile:", data);
+      setProfileChange(data.changed_col);
+      return data;
+    };
+    fetchProfileByUserId();
+  });
+
+  const formatCurrencyItalian = (amount) => {
+    const formatted = new Intl.NumberFormat("it-IT", {
+      style: "currency",
+      currency: "EUR",
+    }).format(amount);
+
+    // Force symbol in front
+    return formatted.replace("€", "").trim().replace(/^/, "€ ");
+  };
+
+  if (loading) {
+    return <Spinner />;
+  }
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-left text-2xl sm:text-3xl font-bold text-black mb-2">
-          Welcome back, John!
+          Welcome back, {businessName}!
         </h1>
         <p className="text-left text-gray-600">
           Here's an overview of your NovaFarm account
@@ -21,7 +170,7 @@ export const DashboardOverview: React.FC = () => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 ">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-6 ">
         <div className="bg-white rounded-lg shadow-sm border p-6 text-left">
           <div className="flex items-center justify-between mb-4 ">
             <div className="w-12 h-12 bg-[#078147]/10 rounded-lg flex items-center justify-center">
@@ -29,8 +178,15 @@ export const DashboardOverview: React.FC = () => {
             </div>
           </div>
           <h3 className="font-semibold text-black mb-1">Current Plan</h3>
-          <p className="text-2xl font-bold text-[#078147] mb-1">Premium</p>
-          <p className="text-sm text-gray-600">Annual billing</p>
+          <p className="text-2xl font-bold text-[#078147] mb-1">
+            {subscription?.plan_name ?? "No Plan"}
+          </p>
+          <p className="text-sm text-gray-600">
+            {getPlanType(
+              subscription?.created_at,
+              subscription?.current_period_end
+            )}
+          </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-sm border p-6">
@@ -42,11 +198,15 @@ export const DashboardOverview: React.FC = () => {
           <h3 className="font-semibold text-black mb-1 text-left">
             Next Billing
           </h3>
-          <p className="text-2xl font-bold text-black mb-1 text-left">Jan 15</p>
-          <p className="text-sm text-gray-600 text-left">€199.00</p>
+          <p className="text-2xl font-bold text-black mb-1 text-left">
+            {formatDate(subscription?.current_period_end ?? "None")}
+          </p>
+          <p className="text-sm text-gray-600 text-left">
+            {formatCurrencyItalian(subscription?.amount_paid ?? 0)}
+          </p>
         </div>
 
-        <div className="bg-white rounded-lg shadow-sm border p-6">
+        {/* <div className="bg-white rounded-lg shadow-sm border p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="w-12 h-12 bg-[#078147]/10 rounded-lg flex items-center justify-center">
               <Plus className="w-6 h-6 text-[#078147]" />
@@ -59,7 +219,7 @@ export const DashboardOverview: React.FC = () => {
           <p className="text-sm text-gray-600 text-left">
             SMS notifications, Analytics+
           </p>
-        </div>
+        </div> */}
       </div>
 
       {/* Quick Actions */}
@@ -105,27 +265,23 @@ export const DashboardOverview: React.FC = () => {
           <div className="flex items-center justify-between py-3 border-b last:border-b-0">
             <div>
               <p className="font-medium text-black">Payment processed</p>
-              <p className="text-sm text-gray-600">Premium plan renewal</p>
+              <p className="text-sm text-gray-600 text-left">
+                {subscription?.plan_name ?? "No Plan"}
+                {/* renewal */}
+              </p>
             </div>
-            <span className="text-sm text-gray-500">2 days ago</span>
+            <span className="text-sm text-gray-500">
+              {getDaysAgo(subscription?.created_at)}
+            </span>
           </div>
           <div className="flex items-center justify-between py-3 border-b last:border-b-0">
             <div>
               <p className="font-medium text-black text-left">
                 Profile updated
               </p>
-              <p className="text-sm text-gray-600">Changed email address</p>
+              <p className="text-sm text-gray-600">{profileChange}</p>
             </div>
             <span className="text-sm text-gray-500">1 week ago</span>
-          </div>
-          <div className="flex items-center justify-between py-3 border-b last:border-b-0">
-            <div>
-              <p className="font-medium text-black text-left">
-                Add-on activated
-              </p>
-              <p className="text-sm text-gray-600">SMS notifications enabled</p>
-            </div>
-            <span className="text-sm text-gray-500">2 weeks ago</span>
           </div>
         </div>
       </div>

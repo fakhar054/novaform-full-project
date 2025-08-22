@@ -49,6 +49,9 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   const handleLogout = () => {
     localStorage.removeItem("sb-ajbxscredobhqfksaqrk-auth-token");
     localStorage.removeItem("role");
+    localStorage.removeItem("id");
+    localStorage.removeItem("token");
+
     navigate("/");
     toast.success("Logout");
     console.log("Logout");
@@ -60,8 +63,6 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   };
 
   const handleEnterPlatform = () => {
-    // This will redirect to the NovaFarm platform login
-    // Replace with actual URL when provided
     window.open("#", "_blank");
   };
 
@@ -127,13 +128,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           })}
 
           {/* Enter Platform Button */}
-          <button
-            onClick={handleEnterPlatform}
-            className="w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100 border-t mt-4 pt-4"
+
+          <a
+            href="https://affiliates.gohighlevel.com/?fp_ref=ih88j&email_template_share=688898a8d9b8671d26c5c51a"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-full flex items-center gap-4 space-x-3 px-4 py-3 rounded-lg text-left transition-colors text-gray-700 hover:bg-gray-100 border-t mt-4 pt-4"
           >
             <ExternalLink className="w-5 h-5" />
-            <span className="font-medium">Enter the Platform</span>
-          </button>
+            Enter the Platform
+          </a>
         </nav>
 
         <div className="absolute bottom-4 left-4 right-4">

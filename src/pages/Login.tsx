@@ -20,17 +20,119 @@ const Login = () => {
   const [errors, setErrors] = useState({ email: "", password: "" });
   const [loading, setLoading] = useState(false);
 
+  // const handleSubmit = async (e: React.FormEvent) => {
+  //   e.preventDefault();
+  //   const newErrors = { email: "", password: "" };
+
+  //   if (!email) {
+  //     newErrors.email = "Email is required";
+  //   } else if (!/\S+@\S+\.\S+/.test(email)) {
+  //     newErrors.email = "Please enter a valid email";
+  //   }
+
+  //   if (!password) {
+  //     newErrors.password = "Password is required";
+  //   } else if (password.length < 6) {
+  //     newErrors.password = "Password must be at least 6 characters";
+  //   }
+  //   setErrors(newErrors);
+  //   if (newErrors.email || newErrors.password) return;
+
+  //   try {
+  //     setLoading(true);
+  //     const { data: loginData, error: loginError } =
+  //       await supabase.auth.signInWithPassword({
+  //         email,
+  //         password,
+  //       });
+
+  //     // Default values
+  //     let actionType = "login";
+  //     let user_id = null;
+
+  //     if (loginData?.user) {
+  //       const { data: userData, error: userFetchError } = await supabase
+  //         .from("users")
+  //         .select("firstName,lastName")
+  //         .eq("email", userEmail)
+  //         .single();
+
+  //       user_id = loginData.user.id;
+  //       const userEmail = loginData.user.email;
+
+  //       const username = `${userData.firstName} ${userData.lastName}`;
+  //       const userId = userData.id;
+  //       await logActivity({
+  //         userId,
+  //         username,
+  //         email: userEmail,
+  //         actionType: "login",
+  //         location: "dashboard",
+  //         risk: "low",
+  //       });
+
+  //       toast.success("Welcome back!");
+  //       // console.log("User logged in:", loginData.user);
+
+  //       await supabase
+  //         .from("users")
+  //         .update({ last_login: new Date().toISOString() })
+  //         .eq("email", userEmail);
+
+  //       navigate("/dashboard");
+  //       return;
+  //     }
+
+  //     // Handle failed login
+  //     if (loginError) {
+  //       actionType = "failed";
+
+  //       // Optional: try to fetch user_id from users table
+  //       const { data: userRow } = await supabase
+  //         .from("users")
+  //         .select("user_id")
+  //         .eq("email", email)
+  //         .maybeSingle();
+
+  //       if (userRow) {
+  //         user_id = userRow.user_id;
+  //       }
+
+  //       await logActivity(user_id, email, actionType);
+  //       alert(loginError.message);
+  //     }
+  //   } catch (err) {
+  //     alert("Unexpected error. Please try again.");
+  //     console.error(err);
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
+  const getUserRole = async (uuid) => {
+    const { data, error } = await supabase
+      .from("users")
+      .select("role")
+      .eq("user_id", uuid)
+      .single();
+    if (error) {
+      console.error("Error fetching user role:", error.message);
+    } else {
+      localStorage.setItem("role", data.role);
+      const userRole = localStorage.getItem("role");
+      return userRole;
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const newErrors = { email: "", password: "" };
-
     if (!email) {
       newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(email)) {
       newErrors.email = "Please enter a valid email";
     }
-
     if (!password) {
       newErrors.password = "Password is required";
     } else if (password.length < 6) {
@@ -40,73 +142,29 @@ const Login = () => {
     if (newErrors.email || newErrors.password) return;
 
     try {
-      setLoading(true);
-      const { data: loginData, error: loginError } =
-        await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) {
+        console.log("Error while Login ", error.message);
+        toast.error(error.message);
+      } else {
+        console.log("Data from login: ", data);
+        const token = data.session.access_token;
+        const uuid = data.user.id;
+        getUserRole(uuid);
 
-      // Default values
-      let actionType = "login";
-      let user_id = null;
+        localStorage.setItem("token", token);
+        localStorage.setItem("id", uuid);
 
-      if (loginData?.user) {
-        user_id = loginData.user.id;
-        const userEmail = loginData.user.email;
+        // const role = localStorage.getItem("role");
+        // console.log("Role From login: ", role);
 
-        const { data: userData, error: userFetchError } = await supabase
-          .from("users")
-          .select("firstName,lastName")
-          .eq("email", userEmail)
-          .single();
-        const username = `${userData.firstName} ${userData.lastName}`;
-        const userId = userData.id;
-        await logActivity({
-          userId,
-          username,
-          email: userEmail,
-          actionType: "login",
-          location: "dashboard",
-          risk: "low",
-        });
-
-        toast.success("Welcome back!");
-        console.log("User logged in:", loginData.user);
-
-        await supabase
-          .from("users")
-          .update({ last_login: new Date().toISOString() })
-          .eq("email", userEmail);
-
+        toast.success("Login Successfully");
         navigate("/dashboard");
-        return;
       }
-
-      // Handle failed login
-      if (loginError) {
-        actionType = "failed";
-
-        // Optional: try to fetch user_id from users table
-        const { data: userRow } = await supabase
-          .from("users")
-          .select("user_id")
-          .eq("email", email)
-          .maybeSingle();
-
-        if (userRow) {
-          user_id = userRow.user_id;
-        }
-
-        await logActivity(user_id, email, actionType);
-        alert(loginError.message);
-      }
-    } catch (err) {
-      alert("Unexpected error. Please try again.");
-      console.error(err);
-    } finally {
-      setLoading(false);
-    }
+    } catch (error) {}
   };
 
   return (
